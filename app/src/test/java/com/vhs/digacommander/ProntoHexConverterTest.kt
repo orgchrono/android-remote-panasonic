@@ -10,9 +10,9 @@ class ProntoHexConverterTest {
 
     @Test
     fun testProntoHexCarrierFrequencyConversion() {
-        // Código 1: freqCode = 006D (109 decimal) -> ~38029 Hz
+        // Código 1: freqCode = 0070 (112 decimal) -> ~37010 Hz
         val signal1 = ProntoHexConverter.convert(PanasonicIrCodes.DIGIT_1)
-        assertEquals(38029, signal1.carrierFrequency)
+        assertEquals(37010, signal1.carrierFrequency)
 
         // Código POWER: freqCode = 0070 (112 decimal) -> ~37010 Hz
         val signalPower = ProntoHexConverter.convert(PanasonicIrCodes.POWER)
@@ -25,19 +25,62 @@ class ProntoHexConverterTest {
         val signal = ProntoHexConverter.convert(PanasonicIrCodes.DIGIT_1)
         assertEquals(100, signal.patternMicroseconds.size)
 
-        // Primeiro pulso (Lead-in Mark): 0x007D = 125 ciclos a 38029 Hz -> ~3287 µs
+        // Primeiro pulso (Lead-in Mark): 0x0080 = 128 ciclos a 37010 Hz -> ~3459 µs
         val leadInMark = signal.patternMicroseconds[0]
-        assertTrue("Lead-in mark deve ser próximo de 3287 µs, obtido: $leadInMark", leadInMark in 3200..3400)
+        assertTrue("Lead-in mark deve ser próximo de 3459 µs, obtido: $leadInMark", leadInMark in 3300..3600)
 
-        // Segundo pulso (Lead-in Space): 0x0030 = 48 ciclos a 38029 Hz -> ~1262 µs
+        // Segundo pulso (Lead-in Space): 0x0040 = 64 ciclos a 37010 Hz -> ~1729 µs
         val leadInSpace = signal.patternMicroseconds[1]
-        assertTrue("Lead-in space deve ser próximo de 1262 µs, obtido: $leadInSpace", leadInSpace in 1200..1300)
+        assertTrue("Lead-in space deve ser próximo de 1729 µs, obtido: $leadInSpace", leadInSpace in 1650..1800)
 
-        // Bit lógico 0 (0010 0010): 16 ciclos mark / 16 ciclos space -> ~421 µs mark / 421 µs space
+        // Bit lógico 0 (0010 0010): 16 ciclos mark / 16 ciclos space -> ~432 µs mark / 432 µs space
         val bitMark = signal.patternMicroseconds[2]
         val bitSpace = signal.patternMicroseconds[3]
-        assertTrue("Bit mark deve ser ~421 µs, obtido: $bitMark", bitMark in 400..440)
-        assertTrue("Bit space deve ser ~421 µs, obtido: $bitSpace", bitSpace in 400..440)
+        assertTrue("Bit mark deve ser ~432 µs, obtido: $bitMark", bitMark in 410..450)
+        assertTrue("Bit space deve ser ~432 µs, obtido: $bitSpace", bitSpace in 410..450)
+    }
+
+    @Test
+    fun testStandardMirroredDigaCommandsIntegrity() {
+        val standardCodes = listOf(
+            "DRIVE_SELECT" to PanasonicIrCodes.DRIVE_SELECT,
+            "DIRECT_NAVIGATOR" to PanasonicIrCodes.DIRECT_NAVIGATOR,
+            "FUNCTIONS" to PanasonicIrCodes.FUNCTIONS,
+            "TOP_MENU" to PanasonicIrCodes.TOP_MENU,
+            "OPTION_SUB_MENU" to PanasonicIrCodes.OPTION_SUB_MENU,
+            "TIME_SLIP" to PanasonicIrCodes.TIME_SLIP,
+            "MANUAL_SKIP_30S" to PanasonicIrCodes.MANUAL_SKIP_30S,
+            "MANUAL_REPLAY_10S" to PanasonicIrCodes.MANUAL_REPLAY_10S,
+            "CREATE_CHAPTER" to PanasonicIrCodes.CREATE_CHAPTER,
+            "DELETE_TITLE" to PanasonicIrCodes.DELETE_TITLE,
+            "REC" to PanasonicIrCodes.REC,
+            "REC_MODE" to PanasonicIrCodes.REC_MODE,
+            "EXT_LINK" to PanasonicIrCodes.EXT_LINK,
+            "INPUT_SELECT" to PanasonicIrCodes.INPUT_SELECT,
+            "CH_UP" to PanasonicIrCodes.CH_UP,
+            "CH_DOWN" to PanasonicIrCodes.CH_DOWN,
+            "PLAY" to PanasonicIrCodes.PLAY,
+            "STOP" to PanasonicIrCodes.STOP,
+            "PAUSE" to PanasonicIrCodes.PAUSE,
+            "FAST_FORWARD" to PanasonicIrCodes.FAST_FORWARD,
+            "REWIND" to PanasonicIrCodes.REWIND,
+            "SKIP_NEXT" to PanasonicIrCodes.SKIP_NEXT,
+            "SKIP_PREV" to PanasonicIrCodes.SKIP_PREV,
+            "AUDIO" to PanasonicIrCodes.AUDIO,
+            "SUBTITLE" to PanasonicIrCodes.SUBTITLE,
+            "STATUS" to PanasonicIrCodes.STATUS,
+            "DISPLAY" to PanasonicIrCodes.DISPLAY,
+            "GUIDE" to PanasonicIrCodes.GUIDE,
+            "PROG_CHECK" to PanasonicIrCodes.PROG_CHECK
+        )
+
+        for ((name, prontoHex) in standardCodes) {
+            val converted = ProntoHexConverter.convert(prontoHex)
+            assertTrue("$name: Portadora deve ser ~37kHz ou ~38kHz", converted.carrierFrequency in 36000..39000)
+            assertTrue("$name: Padrão deve possuir exatamente 100 pulsos", converted.patternMicroseconds.size == 100)
+            // Lead-in mark check (~3.2ms)
+            assertTrue("$name: Lead-in mark válido", converted.patternMicroseconds[0] in 3200..3500)
+        }
     }
 
     @Test
@@ -49,15 +92,24 @@ class ProntoHexConverterTest {
             PanasonicIrCodes.Macros.ERROR_HISTORY_LATEST,
             PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_1,
             PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_2,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_3,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_4,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_5,
             PanasonicIrCodes.Macros.REGION_READOUT,
             PanasonicIrCodes.Macros.HDD_SURFACE_TEST,
             PanasonicIrCodes.Macros.VFD_SEGMENTS_TEST,
+            PanasonicIrCodes.Macros.VIDEO_IO_TEST_80,
+            PanasonicIrCodes.Macros.VIDEO_IO_TEST_81,
             PanasonicIrCodes.Macros.TRAY_CYCLE_TEST,
             PanasonicIrCodes.Macros.CLEAR_ERROR_F00,
             PanasonicIrCodes.Macros.MULTI_REGION_HACK,
+            PanasonicIrCodes.Macros.VERIFY_REGION_FREE,
             PanasonicIrCodes.Macros.CHILD_LOCK_UNLOCK,
+            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_1,
             PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_2,
-            PanasonicIrCodes.Macros.FACTORY_RESET
+            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_3,
+            PanasonicIrCodes.Macros.FACTORY_RESET,
+            PanasonicIrCodes.Macros.TVGOS_DISABLE_ZIP
         )
 
         for (macro in macros) {

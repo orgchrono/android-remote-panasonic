@@ -51,14 +51,41 @@ Se você já estiver com o tablet **Samsung SM-T805M** em mãos e quiser testar 
 | **Bypass Noturno TVGOS** | `00000` no campo Zip Code | Desliga a busca noturna das 3:00 AM que desgasta o motor do HDD. |
 | **Hard Reset de Fábrica** | `[9]` `[9]` | Limpa toda a EEPROM/NVRAM e restaura o aparelho para padrão de fábrica (`CLEAR`). |
 
+## 📚 Documentação Técnica Completa (English Engineering Dossier)
+
+Para o guia aprofundado de engenharia de bancada, consulte o documento:
+👉 **[`PANASONIC_DIGA_HACKS_GUIDE.md`](PANASONIC_DIGA_HACKS_GUIDE.md)**
+
+O dossiê inclui:
+* **Física do Protocolo Kaseikyo 48-bit**: Portadora de 37.010 kHz, lead-in, codificação PWM de pulsos e estrutura de checksum XOR.
+* **Tabela de 17 Hacks e Modos de Serviço**: Sequência de teclas, controle exigido, estado do aparelho, operação interna do microcontrolador SuperH SH-4 e efeito detalhado.
+* **Tabela de Auto-Diagnóstico**: Decodificação completa de erros `U**` (operacionais), `H**` (hardware/servos) e `F**` (falhas críticas de EEPROM e barramento).
+* **Referência Cruzada Hexadecimal**: Todos os 52 códigos de infravermelho no padrão Pronto Hex.
+
+---
+
+## 🎮 Espelhamento Integral do Controle Remoto Físico (EUR7729KG0)
+
+O aplicativo e o perfil `.irplus` espelham com precisão cirúrgica todas as 52 funções do controle remoto original do Panasonic DMR-EH55:
+
+| Seção / Módulo | Teclas & Comandos Espelhados |
+| :--- | :--- |
+| **Sistema & Seleção de Mídia** | `POWER`, `OPEN / CLOSE` (Eject da gaveta), `DRIVE SELECT` (Cicla HDD / DVD / SD-MMC), `INPUT SELECT` (L1, L2, L3, DV) |
+| **Navegação & Menus** | `FUNCTIONS` (Menu DIGA principal), `DIRECT NAVIGATOR` (Lista de gravações), `TOP MENU` (Menu raiz de DVD), `OPTION / SUB MENU` (Menu de contexto), D-Pad (`▲`, `▼`, `◀`, `▶`), `ENTER / OK`, `RETURN`, `EXIT` |
+| **Deck de Transporte** | `PLAY ▶`, `PAUSE ⏸`, `STOP ⏹`, `ANTERIOR |◀◀`, `PRÓXIMO ▶▶|`, `VOLTAR ◀◀`, `AVANÇAR ▶▶` |
+| **Edição & Recursos DIGA** | `TIME SLIP` (Visualização simultânea / Picture-in-Picture), `MANUAL REPLAY` (-10s), `MANUAL SKIP` (+30s), `CREATE CHAPTER` (Criar capítulo), `DELETE TITLE` (Apagar título), `AUDIO`, `SUBTITLE` |
+| **Gravação & Sintonizador** | `REC ●` (Gravação instantânea), `REC MODE` (XP, SP, LP, EP, FR), `EXT LINK` (Gravação via satélite/scart externo), `CH ▲`, `CH ▼`, `GUIDE` (Guia de programação), `PROG / CHECK` |
+| **Teclado Numérico & Serviço** | Dígitos `1` a `9`, `0` (códigos nativos DIGA `0x10`..`0x19`), `MEDIA SERVER` (Acesso em rede), `CANCEL` |
+
 ---
 
 ## 🏗 Estrutura do Repositório
 
 ```
 android-remote-panasonic/
-├── PANASONIC_DIGA_ANDROID_IR_PLAN.md      # Dossiê arquitetural e códigos de bancada
-├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML completo para irplus com todas as macros
+├── PANASONIC_DIGA_HACKS_GUIDE.md          # 🇬🇧 Complete Engineering Dossier (17 Hacks, Service Codes, Error Decodes)
+├── PANASONIC_DIGA_ANDROID_IR_PLAN.md      # Dossiê arquitetural e planejamento inicial
+├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML completo (52 botões físicos + 12 macros prontas)
 ├── DigaIrEngine.kt                        # Núcleo avulso do motor IR em Kotlin
 ├── README.md                              # Guia de instalação, compilação e uso
 ├── build.gradle.kts                       # Configuração de build raiz
