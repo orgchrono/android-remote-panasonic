@@ -79,3 +79,14 @@ fun PanasonicDigaTheme(
         content = content
     )
 }
+
+@Composable
+fun PanasonicDigaCommanderTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    PanasonicDigaTheme(
+        darkTheme = darkTheme,
+        content = content
+    )
+}

@@ -161,7 +161,7 @@ object PanasonicDigaCatalog {
         // 📋 EEPROM ERROR LOG & SELF-DIAGNOSTICS
         // ==========================================
 
-        /** Latest General Fault Code Recall (Service Command 01 - U**/H**/F**) */
+        /** Latest General Fault Code Recall (Service Command 01 - U-series, H-series, F-series codes) */
         val ERROR_HISTORY_LATEST = listOf(
             MacroCommand("Fault Recall (Digit 0)", DIGIT_0, 500L),
             MacroCommand("Fault Recall (Digit 1)", DIGIT_1, 500L)
