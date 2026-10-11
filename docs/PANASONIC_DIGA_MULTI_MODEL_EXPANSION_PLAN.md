@@ -1,181 +1,156 @@
-# 🗺️ Panasonic DIGA Multi-Model Expansion Plan & Technical Dossier
+# 🗺️ Panasonic DIGA Multi-Model Expansion Plan & Engineering Dossier
 
-Este documento estabelece a pesquisa técnica aprofundada, a engenharia de sinais e o plano arquitetural para expandir o **Panasonic DIGA Commander** para suportar dezenas de modelos de gravadores Panasonic DIGA (linhas **DMR-E**, **DMR-ES**, **DMR-EH**, **DMR-EX**, **DMR-EZ**, **combos VHS/DVD** e **Blu-ray DMR-BW**).
+This document establishes the in-depth technical research, signal engineering, and architectural roadmap enabling **Panasonic DIGA Commander** to support dozens of Panasonic DIGA recorders and players spanning multiple hardware generations (**DMR-E**, **DMR-ES**, **DMR-EH**, **DMR-EX**, **DMR-EZ**, **VHS/DVD Combos**, and **Blu-ray DMR-BW** lines).
 
 ---
 
-## 1. Fundamentos Matemáticos do Protocolo Kaseikyo 48-bit
+## 1. Mathematical Fundamentals of the 48-Bit Kaseikyo Protocol
 
-Todos os gravadores e reprodutores Panasonic fabricados entre 1998 e 2018 utilizam a variante Panasonic do protocolo japonês **Kaseikyo 48-bit** (frequência de portadora de **37.010 kHz**).
+All Panasonic optical disc recorders and players manufactured between 1998 and 2018 implement the Matsushita flavor of the Japanese **Kaseikyo 48-bit** infrared transmission standard with a nominal carrier frequency of **$37.010\text{ kHz}$**.
 
-A notação universal IRP (Infra-Red Protocol) do sinal Panasonic é:
+The universal IRP (Infra-Red Protocol) notation for Panasonic DIGA transmissions is:
 $$\{37\text{k}, 432\}<1, -1, 1, -3>(8, -4, 2:8, 32:8, D:8, S:8, F:8, (D \oplus S \oplus F):8, 1, -173)+$$
 
-### 1.1 Anatomia do Frame de 48 Bits
-Cada transmissão é composta por 6 bytes de dados transmitidos LSB (Least Significant Bit first), totalizando 24 pares de rajada Mark/Space (48 pulsos de dados) + 1 par de lead-in + 1 pulso final de encerramento = **100 pulsos alternados**:
+### 1.1 48-Bit Frame Anatomy
+Each transmission frame consists of 6 data bytes transmitted LSB-first (Least Significant Bit first), totaling 24 Mark/Space burst pairs (48 data bit intervals) preceded by 1 lead-in pair and followed by 1 trailing stop pulse = **100 alternating pulse transitions**:
 
-| Posição | Campo | Tamanho | Valor Fixo / Variável | Descrição Técnica |
+| Byte Position | Field Description | Bit Width | Fixed / Dynamic Value | Engineering Function |
 | :--- | :--- | :--- | :--- | :--- |
-| **Byte 1** | Fabricante Low | 8 bits | `0x02` (decimal 2) | Identificador Matsushita / Panasonic |
-| **Byte 2** | Fabricante High | 8 bits | `0x20` (decimal 32) | Identificador Kaseikyo Panasonic |
-| **Byte 3** | **Device ($D$)** | 8 bits | `0xB0` (176) ou `0x90` (144) | Endereço do dispositivo primário |
-| **Byte 4** | **Subdevice ($S$)** | 8 bits | `0x00`, `0x10` ou `0x20` | Canal de pareamento (SET 1, 2 ou 3) |
-| **Byte 5** | **Command ($F$)** | 8 bits | `0x00` a `0xFF` | Código Original do Botão (OBC) |
-| **Byte 6** | **Checksum** | 8 bits | $D \oplus S \oplus F$ | Paridade XOR de integridade estrita |
+| **Byte 1** | OEM Manufacturer Low | 8 bits | `0x02` (decimal 2) | Matsushita / Panasonic vendor identifier |
+| **Byte 2** | OEM Manufacturer High | 8 bits | `0x20` (decimal 32) | Matsushita Kaseikyo identifier |
+| **Byte 3** | **Device Code ($D$)** | 8 bits | `0xB0` (176) or `0x90` (144) | Primary deck hardware target address |
+| **Byte 4** | **Subdevice Code ($S$)** | 8 bits | `0x00`, `0x10`, or `0x20` | Remote pairing channel (SET 1, 2, or 3) |
+| **Byte 5** | **Command ($F$)** | 8 bits | `0x00` through `0xFF` | Original Button Code (OBC) |
+| **Byte 6** | **Integrity Checksum** | 8 bits | $D \oplus S \oplus F$ | Strict bitwise XOR parity byte |
 
 ---
 
-## 2. O Mistério Resolvido dos Modos de Controle: SET 1, SET 2 e SET 3
+## 2. Decoded Remote Modes: SET 1, SET 2, and SET 3
 
-Uma das maiores dores de cabeça para proprietários e técnicos de bancada de gravadores Panasonic é o gravador travar na mensagem **"SET 1"**, **"SET 2"** ou **"SET 3"** no painel frontal VFD, ignorando completamente o controle remoto.
+A major source of confusion for DIGA owners and repair technicians occurs when a recorder displays **`SET 1`**, **`SET 2`**, or **`SET 3`** on its front VFD panel and refuses to respond to remote commands.
 
-A pesquisa de engenharia revela o mecanismo exato:
-O gravador Panasonic DMR altera o seu registrador de **Subdevice ($S$)** quando o usuário altera o canal de controle no menu de Setup para evitar que dois gravadores no mesmo rack respondam juntos.
+### Technical Root Cause:
+Panasonic DIGA recorders modify their internal **Subdevice register ($S$)** when the user selects an alternate remote control channel in the system Setup menu (designed to prevent multiple Panasonic units in the same rack from responding simultaneously):
 
-| Modo Exibido no VFD | Subdevice em Hex ($S$) | Subdevice Decimal | Combinação no Controle Físico |
+| VFD Display Status | Subdevice Hex ($S$) | Subdevice Decimal | Physical Remote Key Combination |
 | :--- | :--- | :--- | :--- |
-| **SET 1** (Padrão de Fábrica) | `0x00` | 0 | Segurar `ENTER / OK` + `1` por 5 segundos |
-| **SET 2** | `0x10` | 16 | Segurar `ENTER / OK` + `2` por 5 segundos |
-| **SET 3** | `0x20` | 32 | Segurar `ENTER / OK` + `3` por 5 segundos |
+| **SET 1** (Factory Default) | `0x00` | 0 | Hold `ENTER / OK` + `1` for 5 seconds |
+| **SET 2** | `0x10` | 16 | Hold `ENTER / OK` + `2` for 5 seconds |
+| **SET 3** | `0x20` | 32 | Hold `ENTER / OK` + `3` for 5 seconds |
 
-### 💡 Impacto Arquitetural no Aplicativo:
-Em vez de hardcodar apenas o Subdevice `0x00`, o nosso motor em Kotlin pode calcular os pulsos dinamicamente. Um seletor de 3 estados na barra superior do app:
-`[ CANAL 1 (SET 1) ] | [ CANAL 2 (SET 2) ] | [ CANAL 3 (SET 3) ]`
-permitirá que o técnico altere instantaneamente a transmissão de qualquer um dos 52 botões para o canal correspondente, destravar gravadores presos em "SET 2/3" sem precisar do controle original!
+### 💡 Architectural Solution:
+Rather than hardcoding Subdevice `0x00`, our pure functional protocol synthesizer (`KaseikyoProtocol.kt`) computes pulse timing dynamically for any target mode:
+`[ MODE 1 (SET 1) ] | [ MODE 2 (SET 2) ] | [ MODE 3 (SET 3) ]`
+
+This enables the operator to switch transmission channels instantaneously or trigger our **Automated 1-Touch OSD Recovery Macros** (`AUTO_RESTORE_SET2_TO_SET1` and `AUTO_RESTORE_SET3_TO_SET1`) to restore units trapped in Set 2 or Set 3 back to factory default Set 1 without manual OSD navigation!
 
 ---
 
-## 3. Matriz de Endereçamento de Dispositivos ($D$)
+## 3. Hardware Device Addressing Matrix ($D$)
 
-| Tipo de Deck / Aparelho | Código Device ($D$) | Subdevice Típico ($S$) | Exemplos de Modelos |
+| Target Mechanism / Unit Type | Device Code ($D$) | Typical Subdevice ($S$) | Representative Models |
 | :--- | :--- | :--- | :--- |
-| **Deck DVD / HDD (Padrão DIGA)** | `0xB0` (176) | `0x00` / `0x10` / `0x20` | DMR-E50, E55, E85H, ES10, ES15, EH50, EH55, EH65, EX77, EZ48V |
-| **Deck VCR (Combos VHS/DVD)** | `0x90` (144) | `0x00` / `0x10` / `0x20` | DMR-ES30V, ES35V, EH75V, EZ47V, EZ48V, NV-VP30, NV-VP31, NV-VP33 |
-| **Controle de TV Panasonic** | `0x01` (1) ou `0x08` (8) | `0x00` | Botões `TV POWER`, `TV VOL +/-`, `TV AV` no topo do controle |
-| **Blu-ray DIGA (Extensão)** | `0xB0` (176) | `0x00` (OBCs estendidos) | DMR-BW500, DMR-BWT700, DMR-BZT710 |
+| **DVD / HDD Deck (Standard DIGA)** | `0xB0` (176) | `0x00` / `0x10` / `0x20` | DMR-E50, E55, E85H, ES10, ES15, EH50, EH55, EH65, EX77, EZ48V |
+| **VCR Deck (VHS/DVD Combos)** | `0x90` (144) | `0x00` / `0x10` / `0x20` | DMR-ES30V, ES35V, EH75V, EZ47V, EZ48V, NV-VP30, NV-VP31, NV-VP33 |
+| **Panasonic Television Control** | `0x01` (1) or `0x08` (8) | `0x00` | Front `TV POWER`, `TV VOL +/-`, `TV AV` top remote buttons |
+| **Blu-ray DIGA Units (Extension)** | `0xB0` (176) | `0x00` (Extended OBCs) | DMR-BW500, DMR-BWT700, DMR-BZT710 |
 
 ---
 
-## 4. Taxonomia das Famílias Panasonic DIGA (2001 – 2012)
+## 4. Taxonomy of Panasonic DIGA Generations (2001 – 2012)
 
-### Família 1: DMR-E Series (Gerações 1 e 2 — 2001 a 2004)
-* **Modelos Representativos:**
-  * *DVD-RAM / DVD-R:* DMR-E20, DMR-E30, DMR-E50, DMR-E55, DMR-E60, DMR-E65.
-  * *DVD + HDD:* DMR-E80H (40GB), DMR-E85H (80GB), DMR-E95H (160GB), DMR-E100H (120GB).
-* **Particularidades:**
-  * Suporte a DVD-RAM e DVD-R (não aceitavam mídias +R/+RW na época).
-  * Teclas dedicadas: `TIME SLIP` (Chasing Playback em DVD-RAM), `F-REC` (Flexible Recording), `CM SKIP`.
-  * **Hacks de Serviço:** Mesmos códigos de serviço (`41` horas laser, `01` erros, `02` região, `99` clear).
-  * Ponto de atenção de bancada: Capacitor `C1601` na fonte do E85H que causa o loop "PLEASE WAIT".
+### Family 1: DMR-E Series (Generations 1 & 2 — 2001 to 2004)
+* **Representative Models:**
+  * *DVD-RAM / DVD-R Standalones:* DMR-E20, DMR-E30, DMR-E50, DMR-E55, DMR-E60, DMR-E65.
+  * *DVD + HDD Flagships:* DMR-E80H (40GB), DMR-E85H (80GB), DMR-E95H (160GB), DMR-E100H (120GB).
+* **Engineering Notes:**
+  * Support for DVD-RAM (Type 1 caddy & Type 2/4 bare discs) and DVD-R.
+  * Dedicated transport keys: `TIME SLIP` (Chasing Playback on DVD-RAM), `F-REC` (Flexible Recording rate calculation), `CM SKIP`.
+  * **Service Bench Codes:** Identical service routines (`41` laser hours, `01` fault recall, `02` region, `99` master clear).
+  * *Bench Alert:* Electrolytic capacitor `C1601` on the DMR-E85H switch-mode power supply frequently develops high ESR, causing the notorious "PLEASE WAIT" boot loop.
 
-### Família 2: DMR-ES Series (Os Campeões de Pass-Through / TBC — 2005 a 2006)
-* **Modelos Representativos:**
+### Family 2: DMR-ES Series (TBC Pass-Through Champions — 2005 to 2006)
+* **Representative Models:**
   * DMR-ES10, DMR-ES15, DMR-ES20, DMR-ES25.
-* **Importância Crítica no Mercado de Preservação VHS:**
-  * O **DMR-ES10** e o **DMR-ES15** são internacionalmente aclamados por arquivistas e laboratórios de digitalização VHS (comunidades *DigitalFAQ* e *VideoHelp*).
-  * Eles incorporam o chip proprietário **Matsushita MN673794 (DVP)**, que executa **Line TBC (Time Base Corrector) de quadro inteiro** e sincronizador de jitter agressivo na entrada analógica (LINE 1 / LINE 2).
-  * Muitos usuários usam esses aparelhos exclusivamente em modo *passthrough* (Entrada VHS ➔ ES10/15 ➔ Saída Component/S-Video para placa de captura), sem sequer gravar em DVD.
-* **Comandos Chave:**
-  * `INPUT SELECT` (para ciclar Line 1, Line 2, DV).
-  * `STATUS` e `DISPLAY` (para checar formato do sinal).
-  * `FUNCTIONS` (para configurar redução de ruído de entrada - Line-in NR).
+* **Significance in VHS Digitization & Archival:**
+  * The **DMR-ES10** and **DMR-ES15** are universally celebrated across archival communities (*DigitalFAQ*, *VideoHelp*).
+  * Equipped with the proprietary **Matsushita MN673794 (DVP)** processor featuring **full-frame Line TBC (Time Base Correction)** and an aggressive horizontal jitter synchronizer on analog inputs (LINE 1 / LINE 2).
+  * Widely utilized as transparent pass-through stabilizers:
+    $$\text{VCR (Composite/S-Video)} \longrightarrow \text{DMR-ES10/15} \longrightarrow \text{Capture Card (S-Video/Component)}$$
+* **Key Commands:**
+  * `INPUT SELECT` (Toggle Line 1, Line 2, DV).
+  * `STATUS` and `DISPLAY` (Verify input field frequency and aspect ratio).
+  * `FUNCTIONS` (Configure Line-in Noise Reduction - Line-in NR).
 
-### Família 3: DMR-EH Series (Carros-Chefe HDD + DVD — 2005 a 2008)
-* **Modelos Representativos:**
+### Family 3: DMR-EH Series (Flagship HDD + DVD Workhorses — 2005 to 2008)
+* **Representative Models:**
   * DMR-EH50, DMR-EH52, DMR-EH55, DMR-EH60, DMR-EH65, DMR-EH67, DMR-EH68, DMR-EH69.
-* **Particularidades:**
-  * Hard Disks de 80 GB a 250 GB formatados no sistema proprietário **MEIHDFS**.
-  * Slot para cartão SD (reprodução de fotos JPEG / transferência).
-  * Saída de vídeo HDMI 1080p (nos modelos EH65, EH67 em diante).
-  * Possui o conjunto mais completo de comandos de edição: `CREATE CHAPTER`, `DELETE TITLE`, `MANUAL SKIP (+30s)`, `MANUAL REPLAY (-10s)`.
-  * Suporta o famoso **Hack Multi-Região de 12 passos** e o **Bypass do TVGOS (00000)**.
+* **Engineering Notes:**
+  * Hard drives from 80 GB to 250 GB formatted under Panasonic's proprietary **MEIHDFS** filesystem.
+  * SD Card slot for JPEG picture viewing and transfer.
+  * HDMI 1080p upscaling video output (EH65, EH67, and later models).
+  * Most complete editing toolset: `CREATE CHAPTER`, `DELETE TITLE`, `MANUAL SKIP (+30s)`, `MANUAL REPLAY (-10s)`.
+  * Fully supports the **12-step Multi-Region Hack** and **TVGOS 00000 Zip Code Bypass**.
 
-### Família 4: DMR-EX e DMR-EZ Series (Sintonizadores Digitais DVB-T / ATSC — 2006 a 2010)
-* **Modelos Representativos:**
-  * *Europa (DVB-T Freeview):* DMR-EX75, DMR-EX77, DMR-EX85, DMR-EX87, DMR-EX768, DMR-EX79, DMR-EX89.
-  * *EUA / Américas (ATSC / Clear QAM):* DMR-EZ27, DMR-EZ28, DMR-EZ37V, DMR-EZ47V, DMR-EZ48V, DMR-EZ49V.
-* **Comandos Adicionais:**
-  * `GUIDE` (Guia eletrônico de programação digital de 7 dias).
-  * `DIGITAL / ANALOG` (Alterna entre sintonizadores analógico e digital).
-  * `HDMI RESOLUTION` (Alterna 576p, 720p, 1080i, 1080p).
-  * `VIERA Link` (Controle conjunto via barramento HDMI CEC).
+### Family 4: DMR-EX and DMR-EZ Series (Digital DVB-T / ATSC Tuners — 2006 to 2010)
+* **Representative Models:**
+  * *Europe (DVB-T Freeview):* DMR-EX75, DMR-EX77, DMR-EX85, DMR-EX87, DMR-EX768, DMR-EX79, DMR-EX89.
+  * *Americas (ATSC / Clear QAM):* DMR-EZ27, DMR-EZ28, DMR-EZ37V, DMR-EZ47V, DMR-EZ48V, DMR-EZ49V.
+* **Additional Commands:**
+  * `GUIDE` (7-day Digital Electronic Program Guide).
+  * `DIGITAL / ANALOG` (Switch between RF tuners).
+  * `HDMI RESOLUTION` (Toggle 576p, 720p, 1080i, 1080p).
+  * `VIERA Link` (HDMI CEC system coordination).
 
-### Família 5: Combos VHS + DVD / Dual-Deck (Estações de Cópia Direta)
-* **Modelos Representativos:**
-  * NV-VP30, NV-VP31, NV-VP32, NV-VP33 (reprodutores combo VCR/DVD).
-  * DMR-E75V, DMR-ES30V, DMR-ES35V (gravadores DVD + VCR Hi-Fi).
-  * DMR-EH75V (Super combo: HDD 80GB + DVD + VCR Hi-Fi).
-  * DMR-EZ47V, DMR-EZ48V (Combo DVB/ATSC + HDMI + DVD + VCR).
-* **Necessidade Técnica de Endereçamento Duplo:**
-  * O aparelho possui dois receptores lógicos no mesmo chassi:
-    * Comandos de DVD respondem ao Device `0xB0`.
-    * Comandos do VCR respondem ao Device `0x90`.
-  * **Comandos Especiais do Deck VCR:**
+### Family 5: Combo VHS + DVD Dual-Deck Units (Direct Archiving Stations)
+* **Representative Models:**
+  * NV-VP30, NV-VP31, NV-VP32, NV-VP33 (VCR/DVD combo players).
+  * DMR-E75V, DMR-ES30V, DMR-ES35V (DVD recorder + Hi-Fi VCR).
+  * DMR-EH75V (Triple combo: 80GB HDD + DVD recorder + Hi-Fi VCR).
+  * DMR-EZ47V, DMR-EZ48V (DVB/ATSC digital tuner + HDMI + DVD + VCR).
+* **Dual Addressing Architecture:**
+  * The chassis incorporates two independent logical IR decoders:
+    * DVD/HDD commands respond to Device **`0xB0`**.
+    * VCR deck commands respond to Device **`0x90`**.
+  * **Dedicated VCR Deck Commands:**
     * `VCR PLAY`, `VCR STOP`, `VCR PAUSE`, `VCR REW`, `VCR FF`, `VCR REC`.
-    * `TRACKING +` e `TRACKING -` (Ajuste fino de cabeçote do VHS).
-    * `ONE-TOUCH DUBBING: VHS ➔ DVD` (Cópia direta de fita para disco).
-    * `ONE-TOUCH DUBBING: DVD ➔ VHS` (Cópia de disco para fita).
-    * `DRIVE SELECT: VHS` (Alterna o foco de exibição para a fita).
+    * `TRACKING +` and `TRACKING -` (Tape head alignment fine-tuning).
+    * `ONE-TOUCH DUBBING: VHS ➔ DVD` (Direct hardware dubbing from tape to disc).
+    * `ONE-TOUCH DUBBING: DVD ➔ VHS` (Direct hardware dubbing from disc to tape).
+    * `DRIVE SELECT: VHS` (Shifts operational display focus to VHS deck).
 
 ---
 
-## 5. Arquitetura da Expansão no Código (Frente 2)
+## 5. Clean Architecture Implementation in Kotlin
 
-### 5.1 Gerador Paramétrico de Pulsos (`KaseikyoPulseGenerator.kt`)
-Em vez de depender exclusivamente de strings estáticas pré-compiladas, implementaremos um gerador universal:
+### 5.1 Pure Functional Protocol Synthesizer (`KaseikyoProtocol.kt`)
+Referentially transparent pulse generator computing bit-accurate pulse arrays and Pronto Hex strings:
 
 ```kotlin
-object KaseikyoPulseGenerator {
-    private const val CARRIER_FREQ = 37010
-    private const val LEAD_IN_MARK = 3459
-    private const val LEAD_IN_SPACE = 1729
-    private const val BIT_MARK = 432
-    private const val BIT_0_SPACE = 432
-    private const val BIT_1_SPACE = 1297
+object KaseikyoProtocol {
+    const val CARRIER_FREQUENCY_HZ = 37010
 
-    fun generateProntoHex(device: Int, subdevice: Int, command: Int): String {
-        val oem1 = 0x02
-        val oem2 = 0x20
-        val checksum = device xor subdevice xor command
-        val bytes = intArrayOf(oem1, oem2, device, subdevice, command, checksum)
-        // Converte os 6 bytes (48 bits LSB) em palavras Pronto Hex 0000 0070 ...
-        ...
-    }
+    fun synthesizePulsePattern(
+        device: Int = DigaDevice.DVD_HDD.id,
+        mode: RemoteMode = RemoteMode.MODE_1,
+        command: Int
+    ): IntArray { ... }
+
+    fun synthesizeProntoHex(
+        device: Int = DigaDevice.DVD_HDD.id,
+        mode: RemoteMode = RemoteMode.MODE_1,
+        command: Int
+    ): String { ... }
 }
 ```
 
-### 5.2 Modelo de Perfil de Equipamento (`DigaModelProfile.kt`)
-```kotlin
-enum class DigaFamily {
-    SERIES_E,       // E50, E55, E85H
-    SERIES_ES,      // ES10, ES15 (TBC Pass-through)
-    SERIES_EH,      // EH50, EH55, EH65, EH67 (HDD+DVD)
-    SERIES_EX_EZ,   // EX77, EZ48V (Digital Tuner + HDMI)
-    COMBO_VHS_DVD   // ES30V, EH75V, EZ48V (VCR Device 0x90 + Dubbing)
-}
+### 5.2 Model Profiles (`DigaModelProfile.kt` & `RemoteMode.kt`)
+* **`DigaModelProfile`**: Supports `DMR_EH55`, `DMR_ES10_ES15`, `COMBO_VHS_DVD`, and `UNIVERSAL`.
+* **`RemoteMode`**: Encapsulates `MODE_1` (`0x00`), `MODE_2` (`0x10`), and `MODE_3` (`0x20`).
 
-data class DigaModelProfile(
-    val id: String,
-    val displayName: String,
-    val family: DigaFamily,
-    val hasHdd: Boolean,
-    val hasVcr: Boolean,
-    val hasHdmi: Boolean,
-    val defaultSubdeviceMode: Int = 0x00 // 0x00 (SET 1), 0x10 (SET 2), 0x20 (SET 3)
-)
-```
-
-### 5.3 Biblioteca de Perfis XML `.irplus`
-Geraremos no repositório perfis XML dedicados para cada grande família, prontos para importação no `irplus` e no `IR Blaster (iodn)`:
-1. `Panasonic_DMR_EH55_Commander.irplus` *(Já existente e bit-perfect)*
-2. `Panasonic_DIGA_ES10_ES15_TBC_Passthrough.irplus` *(Otimizado para bancada de captura VHS)*
-3. `Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus` *(Com controle dual VCR 0x90 + Tracking + Dubbing)*
-4. `Panasonic_DIGA_Universal_Remote_Modes_1_2_3.irplus` *(Com macros para alternar instantaneamente entre SET 1, 2 e 3)*
-
----
-
-## 6. Próximos Passos de Implementação
-1. Implementar o `KaseikyoPulseGenerator.kt` no pacote `core/ir`.
-2. Adicionar o seletor visual de canal (`SET 1 / 2 / 3`) na interface do `RemoteTab.kt`.
-3. Criar os perfis XML adicionais no diretório raiz do projeto.
-4. Integrar o workflow do GitHub Actions para compilação automática do APK Release.
+### 5.3 Ready-to-Use XML Profiles (`profiles/`)
+Four pre-configured XML profiles ready for immediate import into **irplus** or **IR Blaster Remote (iodn / GPL-3.0)**:
+1. `profiles/Panasonic_DMR_EH55_Commander.irplus`
+2. `profiles/Panasonic_DIGA_ES10_ES15_TBC.irplus`
+3. `profiles/Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus`
+4. `profiles/Panasonic_DIGA_Universal_Modes_1_2_3.irplus`

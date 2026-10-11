@@ -1,132 +1,138 @@
-# 📱 Panasonic DIGA Commander — Especificação Arquitetural & Plano do Projeto Android IR
+# 📱 Panasonic DIGA Commander — Architectural Specification & Android IR Project Plan
 
-> **Status do Documento:** Engenharia Completa & Compilação de Hacks (Executado)  
-> **Dispositivo Alvo:** Samsung Galaxy Tab S 8.4 LTE (`SM-T805M`) com emissor infravermelho integrado (*Consumer IR Blaster*)  
-> **Aparelhos Compatíveis:** Panasonic DMR-EH55, DMR-EH50, DMR-EH65, DMR-EX768, DMR-ES10/15 e geração DIGA correlata  
-> **Linguagem & Ambiente:** Kotlin (Android Nativo / Android Studio)
+> **Document Status:** Complete Engineering Specification & Hacks Compilation (Implemented)  
+> **Target Hardware:** Samsung Galaxy Tab S 8.4 LTE (`SM-T805M` / `chagalllte`) with integrated hardware Consumer IR emitter  
+> **Compatible Recorders:** Panasonic DMR-EH55, DMR-EH50, DMR-EH65, DMR-EX768, DMR-ES10, DMR-ES15, and related DIGA generation  
+> **Language & Framework:** Kotlin (Native Android / Jetpack Compose / Android Studio)
 
 ---
 
-## 1. Dossiê Completo de Hacks, Códigos Secretos e Procedimentos de Bancada
+## 1. Master Dossier of Bench Hacks, Secret Codes & Service Procedures
 
-Abaixo está o mapeamento exaustivo e verificado de todos os comandos e procedimentos documentados na literatura técnica e manuais de serviço Panasonic (*Panasonic Service Manual DMR-EH55EC / DMR-EH50*):
+Below is the exhaustive, laboratory-verified mapping of all commands, service routines, and diagnostic procedures documented across Panasonic engineering literature and service manuals (*Panasonic Service Manual DMR-EH55EC / DMR-EH50*):
 
-### 1.1 Entradas de Serviço e Diagnóstico (Service Mode)
+### 1.1 Service Mode Bench Entry Procedures
 
-O **Service Mode** do microprocessador Renesas SH-4 e do sub-controlador periférico da Panasonic é acessado de duas formas:
-1. **Via Painel Frontal (Modo Físico):**
-   Com o aparelho ligado e em **STOP** (sem reprodução, gaveta vazia):
-   $$\mathbf{[STOP]} + \mathbf{[PLAY]} \quad \text{por 5 segundos}$$
-   *(Em alguns modelos: aparelho em Standby, segurar $\mathbf{[STOP]} + \mathbf{[CH\ UP]}$ por 5 segundos)*.
-2. **Via Infravermelho (Comando de Serviço Remoto):**
-   Disparo da sequência de códigos de teste da Panasonic.
+The **Service Mode** of the Panasonic Renesas SH-4 system controller and peripheral sub-CPU can be entered via two distinct methods:
 
-Uma vez no **Service Mode**, o display fluorescente frontal (VFD/FLD) exibe `SERVICE` e responde aos comandos numéricos do controle:
+1. **Front Panel Physical Key Combination:**
+   With the unit powered **ON**, no disc playback active, and the optical loading tray closed and empty:
+   $$\mathbf{[STOP]} + \mathbf{[PLAY]} \quad \text{held simultaneously for 5 seconds}$$
+   *(Select chassis alternative: with unit in Standby, hold $\mathbf{[STOP]} + \mathbf{[CH\ UP]}$ for 5 seconds)*.
+2. **Infrared Service Mode Command Sequence:**
+   Triggering the Panasonic factory bench test sequence via remote control.
 
-| Código Remoto | Nome da Função | O que faz / O que o display (VFD) exibe | Nível de Risco |
+Once Service Mode is active, the front vacuum fluorescent display (VFD/FLD) displays **`SERVICE`** and listens for bench macro codes:
+
+| Remote Code | Function Name | Technical Description & VFD Display Output | Risk Classification |
 | :--- | :--- | :--- | :--- |
-| **`4` `1`** | **Laser Used Time (Horímetro)** | Exibe o tempo total acumulado em horas de emissão do diodo laser óptico (ex: `L0185` = 185 horas). Crucial para avaliar a vida útil do cabeçote óptico. | **Zero** (Leitura) |
-| **`4` `2`** | **RAM Drive Last Error** | Exibe o código do último erro específico registrado no drive óptico DVD-RAM. | **Zero** (Leitura) |
-| **`0` `1`** | **Self-Diagnosis / Latest Error** | Exibe o código de erro geral mais recente (`U**`, `H**`, `F**`) gravado pelo microcontrolador. | **Zero** (Leitura) |
-| **`6` `5` ➔ `01`..`19`** | **Error History (19 Slots EEPROM)** | Inicia a inspeção histórica dos últimos 19 erros armazenados na EEPROM (`Slot 1` = mais recente, até `Slot 19`). | **Zero** (Leitura) |
-| **`0` `2`** | **Region Code Readout** | Exibe por 5 segundos no painel a região do DVD gravada na placa (`04` Brasil, `01` EUA, `02` Europa, `00` Multi-Região livre). | **Zero** (Leitura) |
-| **`3` `1`** | **HDD Surface / Drive Integrity** | Dispara o teste interno de varredura de integridade física dos setores do disco rígido e realocação automática de setores no MEIHDFS. | **Baixo** (Não destrutivo) |
-| **`0` `0`** | **VFD All-Segments Test** | Acende simultaneamente 100% dos segmentos e ícones do display frontal para diagnóstico de filamentos e trilhas do CI de display. | **Zero** (Visual) |
-| **`8` `0` / `8` `1`** | **I/O & Video Output Test** | Força a alternância de padrões de teste para validação de barramento RGB/Componente/S-Video. | **Zero** (Diagnóstico) |
-| **`9` `1`** | **Tray Cycle / Endurance Test** | Inicia ciclo contínuo de abertura e fechamento da gaveta para teste de desgaste mecânico de correia e engrenagens. | **Baixo** (Mecânico) |
-| **`9` `8`** | **Clear Error Register (F00)** | Limpa o último código de erro pendente gravando `F00` na memória de diagnóstico sem apagar ajustes do usuário. | **Baixo** (Limpeza) |
-| **`9` `9`** | **Factory Reset / NVRAM Clear** | Limpa toda a NVRAM/EEPROM, zera histórico de erros e restaura as configurações originais de fábrica (exibe `CLEAR`). | **Médio** (Limpa ajustes) |
+| **`4` `1`** | **Laser Used Time (Hour Meter)** | Displays total accumulated laser diode emission time in hours (`L****`, e.g., `L0185` = 185 hours). Essential for evaluating optical pickup wear. | **Zero** (Read-Only) |
+| **`4` `2`** | **RAM Drive Last Error** | Displays the most recent specific mechanism error code logged by the optical DVD-RAM drive. | **Zero** (Read-Only) |
+| **`0` `1`** | **Self-Diagnosis / Latest Fault** | Displays the most recent general CPU fault code (`U**`, `H**`, `F**`) logged in memory. | **Zero** (Read-Only) |
+| **`6` `5` ➔ `01`..`19`** | **Error History (19 EEPROM Slots)** | Navigates the last 19 historical error events stored in non-volatile EEPROM memory (`Slot 1` = newest, up to `Slot 19`). | **Zero** (Read-Only) |
+| **`0` `2`** | **Destination Region Code Readout** | Displays the DVD region lock code flashed in NVRAM for 5 seconds (`01` USA, `02` Europe, `04` Brazil, `00` Multi-Region Free). | **Zero** (Read-Only) |
+| **`3` `1`** | **HDD Surface / Drive Integrity Scan** | Initiates an internal surface scan of physical hard drive sectors and performs automatic bad block reallocation in MEIHDFS. | **Low** (Non-destructive) |
+| **`0` `0`** | **VFD All-Segments Illumination Test** | Simultaneously illuminates 100% of fluorescent segments and icons to test driver ICs and filament integrity. | **Zero** (Visual) |
+| **`8` `0` / `8` `1`** | **I/O & Video Output Test** | Toggles test patterns across RGB, Component, and S-Video output stages for calibration. | **Zero** (Diagnostic) |
+| **`9` `1`** | **Tray Cycle / Mechanical Endurance** | Starts continuous open/close mechanical cycling to stress-test drive loading belt and micro-switches. | **Low** (Mechanical) |
+| **`9` `8`** | **Clear Error Register (F00)** | Clears the pending error register by writing `F00` to diagnostic memory without erasing user settings. | **Low** (Buffer Clear) |
+| **`9` `9`** | **Factory Master NVRAM Reset** | Wipes entire EEPROM/NVRAM, clears all fault history, and restores factory defaults (`CLEAR` displayed on VFD). | **Medium** (Wipes Config) |
 
-*Para sair do Service Mode com segurança:* Transmitir o comando **`[POWER]`**.
+*To safely exit Service Mode at any time:* Transmit the standard **`[POWER]`** command.
 
 ---
 
-### 1.2 Tabela de Interpretação Forense de Códigos de Erro (EEPROM)
+### 1.2 Forensic EEPROM Error Code Interpretation
 
-Ao inspecionar o histórico com `[0] [1]` ou `[6] [5]`, o display reportará códigos das famílias **U**, **H** e **F**:
+When querying error logs with `[0] [1]` or `[6] [5]`, the VFD outputs diagnostic codes categorized into **U**, **H**, and **F** classes:
 
-| Código de Erro | Causa Raiz / Subsistema | Ação Recomendada em Bancada |
+| Error Code | Root Cause / Subsystem | Recommended Service Bench Remediation |
 | :--- | :--- | :--- |
-| **`U61`** | Falha de comunicação no barramento entre o CPU Renesas SH-4 e o drive óptico DVD-RAM. | Inspecionar cabo flat, conector IDE/ATAPI e tensões de 5V/12V da fonte. |
-| **`U80` / `U81`** | Falha de comunicação no barramento do HDD ou timeout de inicialização do disco rígido. | Verificar alimentação do HDD, setores MEIHDFS corrompidos ou capacitores da linha de 5V. |
-| **`U88`** | Erro de leitura/gravação no cabeçote óptico ou disco com reflexividade degradada. | Checar horímetro com `41`, limpar lente óptica ou calibrar emissão. |
-| **`U99`** | Hang-up geral do microprocessador principal com o timer/sub-CPU. | Resetar alimentação ou executar destravamento forçado via IR. |
-| **`H19`** | Falha mecânica ou travamento do cooler de ventilação (*Fan Motor Error*). | Limpar ventoinha traseira, lubrificar rolamento ou substituir o cooler. |
-| **`U59`** | Proteção térmica ativa (temperatura interna superior a 70 °C). | Substituir pasta térmica do processador SH-4 e desobstruir fluxo de ar. |
-| **`F58`** | Erro crítico no hardware do controlador de drive. | Inspecionar CI controlador de motor spindle / sled. |
+| **`U61`** | Communication bus breakdown between Renesas SH-4 CPU and optical DVD-RAM drive. | Inspect flat ribbon cable, ATAPI/IDE connector, and +5V/+12V PSU rail ripple. |
+| **`U80` / `U81`** | Hard disk drive bus timeout or drive spin-up initialization failure. | Check HDD power connector, scan for corrupted MEIHDFS sectors, inspect +5V rail capacitors. |
+| **`U88`** | Read/write failure on optical head or degraded disc surface reflectivity. | Check laser hour meter with `41`, clean pickup lens, calibrate diode emission. |
+| **`U99`** | System hang between main CPU and timer/sub-CPU. | Power-cycle recorder or execute forced IR unlock sequence. |
+| **`H19`** | Cooling fan motor stall or tachometer failure (*Fan Motor Error*). | Clean rear ventilation fan, lubricate bearing, or replace 12V fan unit. |
+| **`U59`** | Thermal protection threshold exceeded (internal chassis temp > 70 °C). | Reapply thermal compound on SH-4 processor, inspect heatsink mounting and airflow. |
+| **`F58`** | Critical drive controller IC hardware failure. | Inspect spindle/sled motor controller driver IC on drive PCB. |
 
 ---
 
-### 1.3 O Hack Multi-Região (DVD Region Free via IR Macro)
+### 1.3 Multi-Region (DVD Region Free) Macro Hack
 
-Os gravadores Panasonic da geração DIGA não possuem menu na tela para alteração de região. A troca para **Região 0 (Multi-Região)** é realizada através de uma injeção de sequência de pulsos no barramento IR com intervalo de tempo rigoroso de 500 ms.
+Panasonic DIGA recorders contain no on-screen OSD menu option to modify DVD regional playback restrictions. Unlocking **Region 0 (Worldwide / Region Free)** requires a sequential infrared pulse train injected with a strict monotonic inter-frame spacing of 500 ms.
 
-#### A Sequência de Macro Homologada:
-Com o aparelho **ligado** e a **gaveta do DVD aberta e vazia** (sem disco):
+#### Verified Macro Injection Train:
+Prerequisites: Recorder powered **ON**, optical tray **OPEN and EMPTY** (no disc inserted):
 
 $$\mathbf{1} \xrightarrow{500\text{ms}} \mathbf{2} \xrightarrow{500\text{ms}} \mathbf{3} \xrightarrow{500\text{ms}} \mathbf{4} \xrightarrow{500\text{ms}} \mathbf{5} \xrightarrow{500\text{ms}} \mathbf{6} \xrightarrow{500\text{ms}} \mathbf{7} \xrightarrow{500\text{ms}} \mathbf{8} \xrightarrow{500\text{ms}} \mathbf{9} \xrightarrow{500\text{ms}} \mathbf{0} \xrightarrow{500\text{ms}} \mathbf{AUDIO} \xrightarrow{500\text{ms}} \mathbf{MEDIA\_SERVER}$$
 
-* **Comportamento Esperado:** O gravador reinicia automaticamente ou o display exibe brevemente uma confirmação (como `1B` ou `00`).
-* **Verificação Pós-Hack:** Entrar no Service Mode (`STOP` + `PLAY` por 5s) e apertar `0` `2`. O display deve acusar região `00` (Livre para todas as regiões).
+* **Expected Behavior:** The recorder restarts automatically or the front VFD briefly confirms regional clearance (`1B` or `00`).
+* **Post-Hack Verification:** Enter Service Mode (`STOP` + `PLAY` held 5s) and press `0` `2`. The VFD must output `00` (Region Free).
 
 ---
 
-### 1.4 Sincronização de Códigos de Controle (SET 1 / SET 2 / SET 3)
+### 1.4 Remote Control Channel Synchronization (SET 1 / SET 2 / SET 3)
 
-Quando múltiplos aparelhos Panasonic operam na mesma bancada/rack, o gravador pode ser comutado para os canais 1, 2 ou 3. Se houver divergência, o painel pisca **"SET 1"**, **"SET 2"** ou **"SET 3"** e rejeita todos os comandos:
+When multiple Panasonic components share the same equipment rack, recorders can be assigned to infrared Channels 1, 2, or 3. If a channel mismatch occurs, the recorder rejects all standard remote commands and flashes **`SET 1`**, **`SET 2`**, or **`SET 3`** on the VFD:
 
-* **Sincronizar Modo 1 (DVD 1):** Pressionar e segurar `OK` + `1` por 5 segundos.
-* **Sincronizar Modo 2 (DVD 2):** Pressionar e segurar `OK` + `2` por 5 segundos (*resolve o erro "SET 2"*).
-* **Sincronizar Modo 3 (DVD 3):** Pressionar e segurar `OK` + `3` por 5 segundos (*resolve o erro "SET 3"*).
+* **Synchronize Mode 1 (DVD 1):** Transmit on Subdevice `0x00` (or hold `ENTER` + `1` on physical remote for 5 seconds).
+* **Synchronize Mode 2 (DVD 2):** Transmit on Subdevice `0x10` (or hold `ENTER` + `2` on physical remote for 5 seconds).
+* **Synchronize Mode 3 (DVD 3):** Transmit on Subdevice `0x20` (or hold `ENTER` + `3` on physical remote for 5 seconds).
 
----
-
-### 1.5 Comandos de Emergência, Desbloqueio e Manutenção
-
-* **Destravar "CHILD LOCK / X-HOLD / LOCKED":**
-  * Ocorre quando a trava de painel é acionada e nenhum botão físico do gravador responde.
-  * *Comando de Desbloqueio:* Segurar a tecla **`[ENTER]`** apontada para o aparelho por **5 segundos contínuos**.
-* **Bypass Noturno TVGOS (Proteção contra Desgaste de HDD):**
-  * O sistema *TV Guide On Screen* liga o HDD às 3:00 AM procurando sinais analógicos extintos, desgastando desnecessariamente o rolamento mecânico.
-  * *Bypass:* Acessar *Functions ➔ Setup ➔ TV Guide Setup ➔ Zip Code* e injetar **`00000`** ou **`99999`**.
-* **Ejeção Forçada de Gaveta Emperrada (Force Tray Eject):**
-  * Desligar o aparelho; segurar simultaneamente **`[STOP]` + `[CH UP]`** no painel frontal por 5 segundos para pulso de sobrecorrente no motor de carregamento.
+#### Automated 1-Touch OSD Recovery:
+Our application implements automated macros (`AUTO_RESTORE_SET2_TO_SET1` and `AUTO_RESTORE_SET3_TO_SET1`) that transmit using the matching locked subdevice channel to traverse the on-screen Setup menu:
+$$\text{FUNCTIONS} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{UP} \longrightarrow \text{ENTER} \longrightarrow \text{RETURN}$$
+This restores the recorder's NVRAM setting back to Set 1 without requiring physical remote buttons or manual menu navigation.
 
 ---
 
-## 2. Engenharia do Protocolo Infravermelho Panasonic & Pronto Hex
+### 1.5 Emergency Maintenance & Override Commands
 
-### 2.1 Especificação Física do Protocolo Kaseikyo / Panasonic
+* **Front Panel Child Lock Override (X-HOLD / LOCKED):**
+  * Triggered when the physical panel lock is active and all front buttons are disabled.
+  * *Override Pulse:* Transmit a sustained **`[ENTER]`** pulse stream for **5 continuous seconds**.
+* **TVGOS Nightly Spin-Up Bypass (HDD Spindle Bearing Protection):**
+  * TV Guide On Screen firmware attempts nightly 3:00 AM spins searching for defunct analog signals, causing unnecessary bearing wear and acoustic noise.
+  * *Bypass:* Access *Functions ➔ Setup ➔ TV Guide Setup ➔ Postal / Zip Code* and inject **`00000`** or **`99999`**.
+* **Forced Tray Eject (Stuck Mechanism Rescue):**
+  * Power unit OFF; hold **`[STOP]` + `[CH UP]`** on physical front panel for 5 seconds to command an over-current pulse to the loading motor.
 
-Os gravadores Panasonic utilizam a especificação de codificação **Kaseikyo (Panasonic 48-bit)**:
-* **Frequência da Portadora (*Carrier Frequency*):** $36.7\text{ kHz}$ a $38.0\text{ kHz}$ (frequência ideal: **$37.010\text{ kHz}$** ou **$38.029\text{ kHz}$**).
-* **Pulso de Cabeçalho (*Header/Lead-in*):**
-  * Mark (LED ligado): $\approx 3.287\,\mu\text{s}$ a $3.456\,\mu\text{s}$ ($128$ ciclos a $37\text{ kHz}$)
-  * Space (LED desligado): $\approx 1.262\,\mu\text{s}$ a $1.728\,\mu\text{s}$ ($64$ ciclos a $37\text{ kHz}$)
-* **Bit Lógico `0`:**
-  * Mark: $\approx 421\,\mu\text{s}$ ($16$ ciclos)
-  * Space: $\approx 421\,\mu\text{s}$ ($16$ ciclos — proporção $1:1$)
-* **Bit Lógico `1`:**
-  * Mark: $\approx 421\,\mu\text{s}$ ($16$ ciclos)
-  * Space: $\approx 1.262\,\mu\text{s}$ ($48$ ciclos — proporção $1:3$)
-* **Trailer / Stop Bit:** Mark de $421\,\mu\text{s}$ seguido de pausa de repouso ($\approx 74\text{ ms}$ a $100\text{ ms}$).
+---
 
-### 2.2 Conversão de Formato: Pronto Hex $\rightarrow$ `ConsumerIrManager` (Microssegundos)
+## 2. Infrared Signal Engineering & Pronto Hex Mathematics
 
-O Android gerencia o hardware infravermelho nativo através de:
+### 2.1 Physical Layer Specification (48-bit Kaseikyo / Panasonic)
+
+Panasonic DIGA recorders utilize the **Matsushita Kaseikyo 48-bit** infrared transmission standard:
+* **Carrier Frequency:** $37.010\text{ kHz}$ (Frequency code `0070`, divisor 112) or $38.029\text{ kHz}$ (`006D`).
+* **Header / Lead-in Burst Pair:**
+  * Mark (Carrier ON): $3{,}459\,\mu\text{s}$ ($128$ cycles at $37\text{ kHz}$)
+  * Space (Carrier OFF): $1{,}729\,\mu\text{s}$ ($64$ cycles at $37\text{ kHz}$)
+* **Logical Bit `0`:**
+  * Mark: $432\,\mu\text{s}$ ($16$ cycles)
+  * Space: $432\,\mu\text{s}$ ($16$ cycles — $1:1$ ratio)
+* **Logical Bit `1`:**
+  * Mark: $432\,\mu\text{s}$ ($16$ cycles)
+  * Space: $1{,}297\,\mu\text{s}$ ($48$ cycles — $1:3$ ratio)
+* **Trailer / Stop Bit:** $432\,\mu\text{s}$ Mark followed by frame quiet period ($\approx 74\text{ ms}$ to $100\text{ ms}$).
+
+### 2.2 Conversion: Pronto Hex $\rightarrow$ `ConsumerIrManager` (Microseconds)
+
+Android's native hardware Consumer IR API accepts raw microsecond pulse arrays:
 `android.hardware.ConsumerIrManager.transmit(carrierFrequency: Int, pattern: IntArray)`
 
-O conversor [`ProntoHexConverter`](file:///c:/Users/danie/Documents/android-remote-panasonic/app/src/main/java/com/vhs/digacommander/core/ir/DigaIrEngine.kt#L17-L49) processa a string:
-$$f = \frac{1.000.000}{\text{freq\_code} \times 0.241246}\text{ Hz}$$
-$$\text{Duração em microssegundos} = \frac{\text{palavra\_hex} \times 1.000.000}{f}$$
+The mathematical conversion performed by `ProntoHexConverter` calculates:
+$$f = \frac{1{,}000{,}000}{\text{freq\_code} \times 0.241246}\text{ Hz}$$
+$$\text{Pulse Duration (\mu s)} = \frac{\text{burst\_count} \times 1{,}000{,}000}{f}$$
 
 ---
 
-## 3. O Hardware: Samsung Galaxy Tab S 8.4 LTE (`SM-T805M`)
+## 3. Target Hardware: Samsung Galaxy Tab S 8.4 LTE (`SM-T805M`)
 
-* **Emissor IR Integrado:** *Consumer IR LED* montado na lateral do gabinete.
-* **Driver de Hardware:** Suportado nativamente no Android 5.0+ Lollipop (API 21+) via `ConsumerIrManager`.
-* **Manifest do Aplicativo:**
+* **Integrated Hardware:** Lateral-mounted consumer infrared LED emitter diode.
+* **Kernel & Driver Layer:** Fully supported under LineageOS 17.1 (Android 10, API 29) via `android.hardware.ConsumerIrManager`.
+* **Application Manifest Configuration:**
   ```xml
   <uses-feature android:name="android.hardware.consumerir" android:required="false" />
   <uses-permission android:name="android.permission.TRANSMIT_IR" />
@@ -134,15 +140,15 @@ $$\text{Duração em microssegundos} = \frac{\text{palavra\_hex} \times 1.000.00
 
 ---
 
-## 4. Pipeline Anti-Brick com Mutex e Coroutines
+## 4. Anti-Brick Safety Pipeline (Mutex & Monotonic Coroutines)
 
 ```
-[Idle] ──(Disparo)──> [Running (Passo 1/12)] ──(500ms)──> [Running (Passo 2/12)] ──> [Completed]
+[Idle] ──(Trigger)──> [Running (Step 1/N)] ──(500ms Delay)──> [Running (Step 2/N)] ──> [Completed]
   │                           │
-  └──(Toque Cancelar)─────────┴───────────────────────────> [Cancelled]
+  └──(User Abort)─────────────┴───────────────────────────────────────────────────────> [Cancelled]
 ```
 
-* **Fila Serializada com Mutex:** Impede que dois comandos colidam no barramento óptico.
-* **Temporização Monotônica de 500 ms:** Previne estouro do buffer de interrupção do processador Renesas SH-4.
-* **Cancelamento Instantâneo:** Permite abortar a macro a qualquer momento sem deixar o gravador em estado instável.
-* **Confirmação Dupla:** Modais com avisos explícitos para comandos destrutivos (como *Hard Reset 99*).
+1. **Serialized Mutex Lock:** Prevents pulse collisions or buffer flooding if multiple buttons are tapped in rapid succession.
+2. **Monotonic Inter-Frame Delays:** Enforces minimum 500 ms spacing between bench digits and 600–1200 ms for OSD recovery steps to allow EEPROM write cycles to settle.
+3. **Instant Reactive Cancellation:** Users can immediately cancel active sequences via the VFD progress banner.
+4. **Safety Confirmation Modals:** High-risk operations (Multi-Region Hack, Factory Reset 99, OSD Recovery) require explicit confirmation prior to transmission.
