@@ -274,4 +274,81 @@ object PanasonicIrCodes {
             DigaMacroPipeline.MacroCommand("Confirmar ENTER", ENTER_OK, 500L)
         )
     }
+
+    // --- CÓDIGOS DE COMANDO DE BAIXO NÍVEL (OBC - ORIGINAL BUTTON CODES) ---
+    object Commands {
+        const val POWER = 0x3D
+        const val POWER_ON = 0x3E
+        const val POWER_OFF = 0x3F
+        const val EJECT = 0x2B
+        const val STATUS = 0x21
+        const val DISPLAY = 0x22
+        const val DRIVE_SELECT = 0x8C
+        const val DIRECT_NAVIGATOR = 0x62
+        const val FUNCTIONS = 0xCB
+        const val TOP_MENU = 0x20
+        const val OPTION_SUB_MENU = 0x2C
+        const val UP = 0x85
+        const val DOWN = 0x86
+        const val LEFT = 0x87
+        const val RIGHT = 0x88
+        const val ENTER_OK = 0x89
+        const val RETURN = 0x8B
+        const val EXIT = 0xA5
+        const val GUIDE = 0x68
+        const val PROG_CHECK = 0x6E
+        const val PLAY = 0x38
+        const val STOP = 0x39
+        const val PAUSE = 0x3A
+        const val FAST_FORWARD = 0x34
+        const val REWIND = 0x35
+        const val SKIP_NEXT = 0x36
+        const val SKIP_PREV = 0x37
+        const val TIME_SLIP = 0x29
+        const val MANUAL_SKIP_30S = 0x51
+        const val MANUAL_REPLAY_10S = 0x52
+        const val CREATE_CHAPTER = 0x56
+        const val DELETE_TITLE = 0x55
+        const val REC = 0x3C
+        const val REC_MODE = 0xA7
+        const val EXT_LINK = 0xA6
+        const val INPUT_SELECT = 0xA2
+        const val CH_UP = 0x2E
+        const val CH_DOWN = 0x2F
+        const val AUDIO = 0x24
+        const val SUBTITLE = 0x28
+        const val DIGIT_1 = 0x10
+        const val DIGIT_2 = 0x11
+        const val DIGIT_3 = 0x12
+        const val DIGIT_4 = 0x13
+        const val DIGIT_5 = 0x14
+        const val DIGIT_6 = 0x15
+        const val DIGIT_7 = 0x16
+        const val DIGIT_8 = 0x17
+        const val DIGIT_9 = 0x18
+        const val DIGIT_0 = 0x19
+        const val MEDIA_SERVER = 0x77
+        const val CANCEL = 0x8A
+
+        // Comandos específicos para Deck VCR / VHS (Device 0x90)
+        const val VCR_TRACKING_PLUS = 0x1A
+        const val VCR_TRACKING_MINUS = 0x1B
+        const val VCR_DUB_VHS_TO_DVD = 0xEC
+        const val VCR_DUB_DVD_TO_VHS = 0xED
+    }
+
+    /**
+     * Retorna o código Pronto Hex correspondente dinamicamente, permitindo
+     * chaveamento instantâneo entre os modos SET 1, SET 2 e SET 3, bem como
+     * controle de decks VCR (combos VHS/DVD).
+     */
+    fun getCode(command: Int, mode: Int = 1, isVcr: Boolean = false): String {
+        val dev = if (isVcr) KaseikyoPulseGenerator.DEVICE_VCR else KaseikyoPulseGenerator.DEVICE_DVD_HDD
+        val sub = when (mode) {
+            2 -> KaseikyoPulseGenerator.SUBDEVICE_MODE_2
+            3 -> KaseikyoPulseGenerator.SUBDEVICE_MODE_3
+            else -> KaseikyoPulseGenerator.SUBDEVICE_MODE_1
+        }
+        return KaseikyoPulseGenerator.generateProntoHex(dev, sub, command)
+    }
 }

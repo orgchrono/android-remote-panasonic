@@ -87,7 +87,10 @@ android-remote-panasonic/
 ├── PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md # 🗺️ Pesquisa e plano multi-modelos (E, ES, EH, EX, Combos VHS)
 ├── PANASONIC_DIGA_HACKS_GUIDE.md          # 🇬🇧 Complete Engineering Dossier (17 Hacks, Service Codes, Error Decodes)
 ├── PANASONIC_DIGA_ANDROID_IR_PLAN.md      # Dossiê arquitetural e planejamento inicial
-├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML completo (52 botões físicos + 12 macros prontas)
+├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML DMR-EH55 (52 botões físicos + 12 macros prontas)
+├── Panasonic_DIGA_ES10_ES15_TBC.irplus     # Perfil XML DMR-ES10/ES15 (Otimizado para TBC Pass-through)
+├── Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus # Perfil XML Combos VHS/DVD (Dual Deck 0xB0/0x90 + Dubbing)
+├── Panasonic_DIGA_Universal_Modes_1_2_3.irplus     # Perfil XML Universal (Seleção e pareamento SET 1, 2 e 3)
 ├── DigaIrEngine.kt                        # Núcleo avulso do motor IR em Kotlin
 ├── README.md                              # Guia de instalação, compilação e uso
 ├── build.gradle.kts                       # Configuração de build raiz
@@ -103,17 +106,18 @@ android-remote-panasonic/
         │   │   ├── MainActivity.kt        # Entry point do aplicativo Android
         │   │   ├── core/ir/
         │   │   │   ├── DigaIrEngine.kt    # ProntoHexConverter, ConsumerIrTransmitter, DigaMacroPipeline
-        │   │   │   └── PanasonicIrCodes.kt# Catálogo de códigos Pronto Hex & Macros expandidas
+        │   │   │   ├── KaseikyoPulseGenerator.kt # Gerador paramétrico Kaseikyo 48-bit (SET 1/2/3, VCR 0x90)
+        │   │   │   └── PanasonicIrCodes.kt# Catálogo Pronto Hex, Commands OBC & Macros expandidas
         │   │   └── ui/
         │   │       ├── DigaApp.kt         # Container de navegação e máquina de estados
-        │   │       ├── RemoteTab.kt       # Aba 1: Controle remoto completo DIGA
+        │   │       ├── RemoteTab.kt       # Aba 1: Controle remoto com seletores de Perfil, SET 1/2/3 e Card VCR
         │   │       ├── ServiceTab.kt      # Aba 2: Diagnóstico de bancada, horímetro e slots EEPROM
         │   │       ├── HacksTab.kt        # Aba 3: Macro multi-região, SET 1/2/3 e TVGOS bypass
         │   │       ├── components/VfdDisplay.kt # Display virtual retro VFD
         │   │       └── theme/             # Cores, tipografia e tema
         │   └── res/                       # Strings, cores, estilos e temas XML
         └── test/java/com/vhs/digacommander/
-            └── ProntoHexConverterTest.kt  # Testes unitários de pulsos e integridade de macros
+            └── ProntoHexConverterTest.kt  # Testes de pulsos, KaseikyoPulseGenerator e integridade de macros
 ```
 
 ---

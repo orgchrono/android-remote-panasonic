@@ -122,4 +122,45 @@ class ProntoHexConverterTest {
             }
         }
     }
+
+    @Test
+    fun testKaseikyoPulseGeneratorParametricCreation() {
+        // Valida que o gerador paramétrico produz 100 pulsos exatos
+        val pulsesDvdMode1 = com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.generatePulsePattern(
+            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.DEVICE_DVD_HDD,
+            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.SUBDEVICE_MODE_1,
+            PanasonicIrCodes.Commands.POWER
+        )
+        assertEquals(100, pulsesDvdMode1.size)
+        assertEquals(3459, pulsesDvdMode1[0]) // Lead-in mark
+        assertEquals(1729, pulsesDvdMode1[1]) // Lead-in space
+        assertEquals(432, pulsesDvdMode1[2])  // Bit mark
+
+        // Valida que o Pronto Hex gerado dinamicamente é aceito pelo ProntoHexConverter
+        val prontoHex = com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.generateProntoHex(
+            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.DEVICE_DVD_HDD,
+            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.SUBDEVICE_MODE_1,
+            PanasonicIrCodes.Commands.POWER
+        )
+        val converted = ProntoHexConverter.convert(prontoHex)
+        assertEquals(37010, converted.carrierFrequency)
+        assertEquals(100, converted.patternMicroseconds.size)
+    }
+
+    @Test
+    fun testRemoteModesAndVcrAddressing() {
+        // Testa geração para Mode 1, Mode 2 e Mode 3 (SET 1, SET 2, SET 3)
+        for (mode in 1..3) {
+            val code = PanasonicIrCodes.getCode(PanasonicIrCodes.Commands.PLAY, mode = mode)
+            val signal = ProntoHexConverter.convert(code)
+            assertEquals(37010, signal.carrierFrequency)
+            assertEquals(100, signal.patternMicroseconds.size)
+        }
+
+        // Testa geração para VCR Deck (Device 0x90)
+        val vcrPlayCode = PanasonicIrCodes.getCode(PanasonicIrCodes.Commands.PLAY, mode = 1, isVcr = true)
+        val vcrSignal = ProntoHexConverter.convert(vcrPlayCode)
+        assertEquals(37010, vcrSignal.carrierFrequency)
+        assertEquals(100, vcrSignal.patternMicroseconds.size)
+    }
 }
