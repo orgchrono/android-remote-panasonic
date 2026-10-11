@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build and Package APK
+    name: Build, Audit and Package APK
     runs-on: ubuntu-latest
 
     steps:
@@ -35,8 +35,14 @@ jobs:
           fi
           chmod +x ./gradlew
 
+      - name: Code Quality & Linter Audit (KtLint)
+        run: ./gradlew ktlintCheck
+
       - name: Run Unit Tests
         run: ./gradlew test
+
+      - name: Run Android Lint Audit
+        run: ./gradlew lintDebug
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace

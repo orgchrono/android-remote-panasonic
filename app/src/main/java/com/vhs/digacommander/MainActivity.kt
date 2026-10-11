@@ -21,7 +21,6 @@ import com.vhs.digacommander.presentation.viewmodel.DigaViewModel
  * and binds the reactive MVVM presentation layer.
  */
 class MainActivity : ComponentActivity() {
-
     private lateinit var transmitter: ConsumerIrTransmitter
     private lateinit var macroPipeline: DigaMacroPipeline
 
@@ -33,19 +32,20 @@ class MainActivity : ComponentActivity() {
         macroPipeline = DigaMacroPipeline(transmitter)
 
         // Bind ViewModel scoped to ComponentActivity lifecycle
-        val factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return DigaViewModel(transmitter, macroPipeline) as T
+        val factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return DigaViewModel(transmitter, macroPipeline) as T
+                }
             }
-        }
         val viewModel = ViewModelProvider(this, factory)[DigaViewModel::class.java]
 
         setContent {
             PanasonicDigaCommanderTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = DigaDarkBackground
+                    color = DigaDarkBackground,
                 ) {
                     DigaMainScreen(viewModel = viewModel)
                 }

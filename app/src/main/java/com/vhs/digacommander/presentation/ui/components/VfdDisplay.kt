@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.vhs.digacommander.presentation.constant.DigaUiDimensions
+import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import com.vhs.digacommander.presentation.theme.VfdBackground
 import com.vhs.digacommander.presentation.theme.VfdDim
 import com.vhs.digacommander.presentation.theme.VfdGlow
@@ -26,58 +26,59 @@ fun VfdDisplay(
     mainText: String,
     subText: String,
     irStatusText: String,
-    headerTitle: String = "PANASONIC DIGA RECORDER",
-    modifier: Modifier = Modifier
+    headerTitle: String = DigaUiStrings.VFD_HEADER_TITLE,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(VfdBackground, RoundedCornerShape(8.dp))
-            .border(2.dp, VfdDim, RoundedCornerShape(8.dp))
-            .padding(12.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(VfdBackground, RoundedCornerShape(DigaUiDimensions.RadiusButton))
+                .border(DigaUiDimensions.BorderWidthStandard, VfdDim, RoundedCornerShape(DigaUiDimensions.RadiusButton))
+                .padding(DigaUiDimensions.PaddingCardCompact),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = headerTitle,
                     color = VfdDim,
-                    fontSize = 10.sp,
+                    fontSize = DigaUiDimensions.TextSizeVfdStatus,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = irStatusText,
-                    color = if (irStatusText.contains("ONLINE")) VfdGlow else Color(0xFFFFB74D),
-                    fontSize = 10.sp,
+                    color = if (irStatusText.contains(DigaUiStrings.VFD_ONLINE_KEYWORD)) VfdGlow else Color(0xFFFFB74D),
+                    fontSize = DigaUiDimensions.TextSizeVfdStatus,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
 
             Text(
                 text = mainText,
                 color = VfdGlow,
-                fontSize = 22.sp,
+                fontSize = DigaUiDimensions.TextSizeVfdDisplayMain,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
+                letterSpacing = DigaUiDimensions.LetterSpacingVfd,
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingTight))
 
             Text(
                 text = subText,
                 color = VfdText,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace
+                fontSize = DigaUiDimensions.TextSizeVfdDisplaySub,
+                fontFamily = FontFamily.Monospace,
             )
         }
     }

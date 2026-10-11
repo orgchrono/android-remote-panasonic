@@ -1,6 +1,6 @@
 package com.vhs.digacommander.domain.pipeline
 
-import com.vhs.digacommander.data.ir.ConsumerIrTransmitter
+import com.vhs.digacommander.data.ir.IrTransmitter
 import com.vhs.digacommander.data.model.MacroCommand
 import com.vhs.digacommander.data.model.MacroExecutionState
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * Defensive macro execution pipeline ensuring strict anti-brick safety:
@@ -22,8 +21,8 @@ import kotlinx.coroutines.sync.withLock
  * 3. Reactive coroutine cancellation immediately halting transmissions on operator abort.
  */
 class DigaMacroPipeline(
-    private val transmitter: ConsumerIrTransmitter,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val transmitter: IrTransmitter,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
 ) {
     private val executionMutex = Mutex()
     private var currentJob: Job? = null
@@ -42,44 +41,47 @@ class DigaMacroPipeline(
 
         currentJob?.cancel()
 
-        currentJob = scope.launch {
-            if (!executionMutex.tryLock()) {
-                _state.value = MacroExecutionState.Error("Another macro is already in progress")
-                return@launch
-            }
-
-            try {
-                commands.forEachIndexed { index, cmd ->
-                    if (!isActive) {
-                        _state.value = MacroExecutionState.Cancelled
-                        return@launch
-                    }
-
-                    _state.value = MacroExecutionState.Running(
-                        step = index + 1,
-                        totalSteps = commands.size,
-                        currentLabel = cmd.label
-                    )
-
-                    val result = transmitter.transmitPronto(cmd.prontoHex)
-                    if (result.isFailure) {
-                        _state.value = MacroExecutionState.Error(
-                            "Transmission failed at step ${index + 1}: ${result.exceptionOrNull()?.message}"
-                        )
-                        return@launch
-                    }
-
-                    // Monotonic pause between pulses
-                    delay(cmd.postDelayMs)
+        currentJob =
+            scope.launch {
+                if (!executionMutex.tryLock()) {
+                    _state.value = MacroExecutionState.Error("Another macro is already in progress")
+                    return@launch
                 }
 
-                _state.value = MacroExecutionState.Completed
-            } catch (e: Exception) {
-                _state.value = MacroExecutionState.Error(e.message ?: "Unknown macro execution error")
-            } finally {
-                executionMutex.unlock()
+                try {
+                    commands.forEachIndexed { index, cmd ->
+                        if (!isActive) {
+                            _state.value = MacroExecutionState.Cancelled
+                            return@launch
+                        }
+
+                        _state.value =
+                            MacroExecutionState.Running(
+                                step = index + 1,
+                                totalSteps = commands.size,
+                                currentLabel = cmd.label,
+                            )
+
+                        val result = transmitter.transmitPronto(cmd.prontoHex)
+                        if (result.isFailure) {
+                            _state.value =
+                                MacroExecutionState.Error(
+                                    "Transmission failed at step ${index + 1}: ${result.exceptionOrNull()?.message}",
+                                )
+                            return@launch
+                        }
+
+                        // Monotonic pause between pulses
+                        delay(cmd.postDelayMs)
+                    }
+
+                    _state.value = MacroExecutionState.Completed
+                } catch (e: Exception) {
+                    _state.value = MacroExecutionState.Error(e.message ?: "Unknown macro execution error")
+                } finally {
+                    executionMutex.unlock()
+                }
             }
-        }
     }
 
     /**

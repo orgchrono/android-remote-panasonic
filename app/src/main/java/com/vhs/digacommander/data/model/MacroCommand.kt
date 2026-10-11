@@ -10,5 +10,5 @@ package com.vhs.digacommander.data.model
 data class MacroCommand(
     val label: String,
     val prontoHex: String,
-    val postDelayMs: Long = 500L
+    val postDelayMs: Long = 500L,
 )

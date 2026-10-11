@@ -1,5 +1,6 @@
 package com.vhs.digacommander.data.catalog
 
+import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.ir.KaseikyoProtocol
 import com.vhs.digacommander.data.model.DigaDevice
 import com.vhs.digacommander.data.model.MacroCommand
@@ -10,7 +11,6 @@ import com.vhs.digacommander.data.model.RemoteMode
  * benchmark Pronto Hex strings, and automated bench service macros.
  */
 object PanasonicDigaCatalog {
-
     /**
      * 8-bit Original Button Codes (OBC / Command bytes) in Matsushita Kaseikyo protocol.
      */
@@ -81,7 +81,7 @@ object PanasonicDigaCatalog {
     fun getProntoHex(
         command: Int,
         mode: RemoteMode = RemoteMode.MODE_1,
-        device: DigaDevice = DigaDevice.DVD_HDD
+        device: DigaDevice = DigaDevice.DVD_HDD,
     ): String = KaseikyoProtocol.synthesizeProntoHex(device.id, mode, command)
 
     // Pre-synthesized benchmark codes in Mode 1
@@ -140,153 +140,170 @@ object PanasonicDigaCatalog {
      * Automated Bench Macros and Diagnostic Routines.
      */
     object Macros {
-
         // ==========================================
         // 🩺 OPTICAL HEALTH & LASER HOUR COUNTER
         // ==========================================
 
         /** Laser Operating Hours Recall (Service Command 41 - Displays L****) */
-        val LASER_HOURS = listOf(
-            MacroCommand("Laser Hours (Digit 4)", DIGIT_4, 500L),
-            MacroCommand("Laser Hours (Digit 1)", DIGIT_1, 500L)
-        )
+        val LASER_HOURS =
+            listOf(
+                MacroCommand("Laser Hours (Digit 4)", DIGIT_4, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Laser Hours (Digit 1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** DVD-RAM Drive Last Error Code Recall (Service Command 42) */
-        val RAM_DRIVE_LAST_ERROR = listOf(
-            MacroCommand("RAM Error (Digit 4)", DIGIT_4, 500L),
-            MacroCommand("RAM Error (Digit 2)", DIGIT_2, 500L)
-        )
+        val RAM_DRIVE_LAST_ERROR =
+            listOf(
+                MacroCommand("RAM Error (Digit 4)", DIGIT_4, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("RAM Error (Digit 2)", DIGIT_2, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         // ==========================================
         // 📋 EEPROM ERROR LOG & SELF-DIAGNOSTICS
         // ==========================================
 
         /** Latest General Fault Code Recall (Service Command 01 - U-series, H-series, F-series codes) */
-        val ERROR_HISTORY_LATEST = listOf(
-            MacroCommand("Fault Recall (Digit 0)", DIGIT_0, 500L),
-            MacroCommand("Fault Recall (Digit 1)", DIGIT_1, 500L)
-        )
+        val ERROR_HISTORY_LATEST =
+            listOf(
+                MacroCommand("Fault Recall (Digit 0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Fault Recall (Digit 1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Historical Slot 1 Error (65 -> 01) */
-        val ERROR_HISTORY_SLOT_1 = listOf(
-            MacroCommand("Log Buffer (6)", DIGIT_6, 500L),
-            MacroCommand("Log Buffer (5)", DIGIT_5, 500L),
-            MacroCommand("Slot 01 (0)", DIGIT_0, 500L),
-            MacroCommand("Slot 01 (1)", DIGIT_1, 500L)
-        )
+        val ERROR_HISTORY_SLOT_1 =
+            listOf(
+                MacroCommand("Log Buffer (6)", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Log Buffer (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 01 (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 01 (1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Historical Slot 2 Error (65 -> 02) */
-        val ERROR_HISTORY_SLOT_2 = listOf(
-            MacroCommand("Log Buffer (6)", DIGIT_6, 500L),
-            MacroCommand("Log Buffer (5)", DIGIT_5, 500L),
-            MacroCommand("Slot 02 (0)", DIGIT_0, 500L),
-            MacroCommand("Slot 02 (2)", DIGIT_2, 500L)
-        )
+        val ERROR_HISTORY_SLOT_2 =
+            listOf(
+                MacroCommand("Log Buffer (6)", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Log Buffer (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 02 (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 02 (2)", DIGIT_2, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Historical Slot 3 Error (65 -> 03) */
-        val ERROR_HISTORY_SLOT_3 = listOf(
-            MacroCommand("Log Buffer (6)", DIGIT_6, 500L),
-            MacroCommand("Log Buffer (5)", DIGIT_5, 500L),
-            MacroCommand("Slot 03 (0)", DIGIT_0, 500L),
-            MacroCommand("Slot 03 (3)", DIGIT_3, 500L)
-        )
+        val ERROR_HISTORY_SLOT_3 =
+            listOf(
+                MacroCommand("Log Buffer (6)", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Log Buffer (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 03 (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 03 (3)", DIGIT_3, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Historical Slot 4 Error (65 -> 04) */
-        val ERROR_HISTORY_SLOT_4 = listOf(
-            MacroCommand("Log Buffer (6)", DIGIT_6, 500L),
-            MacroCommand("Log Buffer (5)", DIGIT_5, 500L),
-            MacroCommand("Slot 04 (0)", DIGIT_0, 500L),
-            MacroCommand("Slot 04 (4)", DIGIT_4, 500L)
-        )
+        val ERROR_HISTORY_SLOT_4 =
+            listOf(
+                MacroCommand("Log Buffer (6)", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Log Buffer (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 04 (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 04 (4)", DIGIT_4, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Historical Slot 5 Error (65 -> 05) */
-        val ERROR_HISTORY_SLOT_5 = listOf(
-            MacroCommand("Log Buffer (6)", DIGIT_6, 500L),
-            MacroCommand("Log Buffer (5)", DIGIT_5, 500L),
-            MacroCommand("Slot 05 (0)", DIGIT_0, 500L),
-            MacroCommand("Slot 05 (5)", DIGIT_5, 500L)
-        )
+        val ERROR_HISTORY_SLOT_5 =
+            listOf(
+                MacroCommand("Log Buffer (6)", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Log Buffer (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 05 (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Slot 05 (5)", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Clear Temporary Error Buffer to F00 (Service Command 98) */
-        val CLEAR_ERROR_F00 = listOf(
-            MacroCommand("Clear Error (9)", DIGIT_9, 500L),
-            MacroCommand("Clear Error (8)", DIGIT_8, 500L)
-        )
+        val CLEAR_ERROR_F00 =
+            listOf(
+                MacroCommand("Clear Error (9)", DIGIT_9, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Clear Error (8)", DIGIT_8, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Destination Region Lock Readout (Service Command 02) */
-        val REGION_READOUT = listOf(
-            MacroCommand("Region Code (0)", DIGIT_0, 500L),
-            MacroCommand("Region Code (2)", DIGIT_2, 500L)
-        )
+        val REGION_READOUT =
+            listOf(
+                MacroCommand("Region Code (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Region Code (2)", DIGIT_2, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         // ==========================================
         // 🔬 HARDWARE TESTS & MECHANICAL CYCLES
         // ==========================================
 
         /** HDD SMART Surface Diagnostic and Sector Reallocation (Command 31) */
-        val HDD_SURFACE_TEST = listOf(
-            MacroCommand("HDD Test (3)", DIGIT_3, 500L),
-            MacroCommand("HDD Test (1)", DIGIT_1, 500L)
-        )
+        val HDD_SURFACE_TEST =
+            listOf(
+                MacroCommand("HDD Test (3)", DIGIT_3, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("HDD Test (1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** VFD Fluorescent Display 100% Segments Illumination Test (Command 00) */
-        val VFD_SEGMENTS_TEST = listOf(
-            MacroCommand("VFD Test (0)", DIGIT_0, 500L),
-            MacroCommand("VFD Test (0)", DIGIT_0, 500L)
-        )
+        val VFD_SEGMENTS_TEST =
+            listOf(
+                MacroCommand("VFD Test (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("VFD Test (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Video Output Bus Pattern 80 */
-        val VIDEO_IO_TEST_80 = listOf(
-            MacroCommand("Video Bus (8)", DIGIT_8, 500L),
-            MacroCommand("Video Bus (0)", DIGIT_0, 500L)
-        )
+        val VIDEO_IO_TEST_80 =
+            listOf(
+                MacroCommand("Video Bus (8)", DIGIT_8, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Video Bus (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Video Output Bus Pattern 81 */
-        val VIDEO_IO_TEST_81 = listOf(
-            MacroCommand("Video Bus (8)", DIGIT_8, 500L),
-            MacroCommand("Video Bus (1)", DIGIT_1, 500L)
-        )
+        val VIDEO_IO_TEST_81 =
+            listOf(
+                MacroCommand("Video Bus (8)", DIGIT_8, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Video Bus (1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Loading Tray Mechanical Endurance Cycle (Command 91) */
-        val TRAY_CYCLE_TEST = listOf(
-            MacroCommand("Tray Cycle (9)", DIGIT_9, 500L),
-            MacroCommand("Tray Cycle (1)", DIGIT_1, 500L)
-        )
+        val TRAY_CYCLE_TEST =
+            listOf(
+                MacroCommand("Tray Cycle (9)", DIGIT_9, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Tray Cycle (1)", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         // ==========================================
         // ★ MULTI-REGION (DVD REGION FREE) HACK ★
         // ==========================================
 
         /** 12-Step Automated Multi-Region Unlock Sequence */
-        val MULTI_REGION_HACK = listOf(
-            MacroCommand("Digit 1", DIGIT_1, 500L),
-            MacroCommand("Digit 2", DIGIT_2, 500L),
-            MacroCommand("Digit 3", DIGIT_3, 500L),
-            MacroCommand("Digit 4", DIGIT_4, 500L),
-            MacroCommand("Digit 5", DIGIT_5, 500L),
-            MacroCommand("Digit 6", DIGIT_6, 500L),
-            MacroCommand("Digit 7", DIGIT_7, 500L),
-            MacroCommand("Digit 8", DIGIT_8, 500L),
-            MacroCommand("Digit 9", DIGIT_9, 500L),
-            MacroCommand("Digit 0", DIGIT_0, 500L),
-            MacroCommand("Audio", AUDIO, 500L),
-            MacroCommand("Commit Unlock", MEDIA_SERVER, 500L)
-        )
+        val MULTI_REGION_HACK =
+            listOf(
+                MacroCommand("Digit 1", DIGIT_1, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 2", DIGIT_2, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 3", DIGIT_3, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 4", DIGIT_4, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 5", DIGIT_5, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 6", DIGIT_6, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 7", DIGIT_7, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 8", DIGIT_8, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 9", DIGIT_9, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Digit 0", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Audio", AUDIO, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Commit Unlock", MEDIA_SERVER, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** Verify Multi-Region Unlock Status */
-        val VERIFY_REGION_FREE = listOf(
-            MacroCommand("Read Region (0)", DIGIT_0, 500L),
-            MacroCommand("Read Region (2)", DIGIT_2, 500L)
-        )
+        val VERIFY_REGION_FREE =
+            listOf(
+                MacroCommand("Read Region (0)", DIGIT_0, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Read Region (2)", DIGIT_2, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         // ==========================================
         // 📡 CHANNEL PAIRING & EMERGENCY LOCK RESCUE
         // ==========================================
 
         /** Front Panel Child Lock / X-HOLD Override (Sustained ENTER pulses) */
-        val CHILD_LOCK_UNLOCK = List(10) {
-            MacroCommand("Unlock Hold (${it + 1}/10)", ENTER_OK, 500L)
-        }
+        val CHILD_LOCK_UNLOCK =
+            List(10) {
+                MacroCommand("Unlock Hold (${it + 1}/10)", ENTER_OK, DigaTimings.DELAY_SERVICE_DIGIT_MS)
+            }
 
         // =========================================================================
         // 🔄 AUTOMATED OSD RECOVERY MACROS (AUTO-RESTORE SET 2 / SET 3 TO SET 1)
@@ -306,55 +323,143 @@ object PanasonicDigaCatalog {
          * 9. ENTER_OK (Commits Set 1 to NVRAM)
          * 10. RETURN (Exits OSD menu)
          */
-        val AUTO_RESTORE_SET2_TO_SET1 = listOf(
-            MacroCommand("Open Functions OSD", getProntoHex(OBC.FUNCTIONS, RemoteMode.MODE_2), 1200L),
-            MacroCommand("Down to Setup", getProntoHex(OBC.DOWN, RemoteMode.MODE_2), 600L),
-            MacroCommand("Enter Setup", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2), 800L),
-            MacroCommand("Down to Others", getProntoHex(OBC.DOWN, RemoteMode.MODE_2), 600L),
-            MacroCommand("Enter Others Sub-Menu", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2), 800L),
-            MacroCommand("Down to Remote Code", getProntoHex(OBC.DOWN, RemoteMode.MODE_2), 600L),
-            MacroCommand("Open Remote Code List", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2), 600L),
-            MacroCommand("Select Set 1 (Up)", getProntoHex(OBC.UP, RemoteMode.MODE_2), 600L),
-            MacroCommand("Confirm Set 1 (NVRAM Commit)", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2), 800L),
-            MacroCommand("Exit Menu (Return)", getProntoHex(OBC.RETURN, RemoteMode.MODE_2), 600L)
-        )
+        val AUTO_RESTORE_SET2_TO_SET1 =
+            listOf(
+                MacroCommand(
+                    "Open Functions OSD",
+                    getProntoHex(OBC.FUNCTIONS, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_INITIAL_OPEN_MS,
+                ),
+                MacroCommand(
+                    "Down to Setup",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Enter Setup",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Down to Others",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Enter Others Sub-Menu",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Down to Remote Code",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Open Remote Code List",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Select Set 1 (Up)",
+                    getProntoHex(OBC.UP, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Confirm Set 1 (NVRAM Commit)",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Exit Menu (Return)",
+                    getProntoHex(OBC.RETURN, RemoteMode.MODE_2),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+            )
 
         /**
          * Fully automated OSD navigation routine restoring a recorder trapped in SET 3 back to SET 1.
          * Commands are transmitted in Mode 3 (Subdevice 0x20).
          */
-        val AUTO_RESTORE_SET3_TO_SET1 = listOf(
-            MacroCommand("Open Functions OSD", getProntoHex(OBC.FUNCTIONS, RemoteMode.MODE_3), 1200L),
-            MacroCommand("Down to Setup", getProntoHex(OBC.DOWN, RemoteMode.MODE_3), 600L),
-            MacroCommand("Enter Setup", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3), 800L),
-            MacroCommand("Down to Others", getProntoHex(OBC.DOWN, RemoteMode.MODE_3), 600L),
-            MacroCommand("Enter Others Sub-Menu", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3), 800L),
-            MacroCommand("Down to Remote Code", getProntoHex(OBC.DOWN, RemoteMode.MODE_3), 600L),
-            MacroCommand("Open Remote Code List", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3), 600L),
-            MacroCommand("Move towards Set 1 (Up)", getProntoHex(OBC.UP, RemoteMode.MODE_3), 600L),
-            MacroCommand("Select Set 1 (Up)", getProntoHex(OBC.UP, RemoteMode.MODE_3), 600L),
-            MacroCommand("Confirm Set 1 (NVRAM Commit)", getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3), 800L),
-            MacroCommand("Exit Menu (Return)", getProntoHex(OBC.RETURN, RemoteMode.MODE_3), 600L)
-        )
+        val AUTO_RESTORE_SET3_TO_SET1 =
+            listOf(
+                MacroCommand(
+                    "Open Functions OSD",
+                    getProntoHex(OBC.FUNCTIONS, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_INITIAL_OPEN_MS,
+                ),
+                MacroCommand(
+                    "Down to Setup",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Enter Setup",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Down to Others",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Enter Others Sub-Menu",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Down to Remote Code",
+                    getProntoHex(OBC.DOWN, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Open Remote Code List",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Move towards Set 1 (Up)",
+                    getProntoHex(OBC.UP, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Select Set 1 (Up)",
+                    getProntoHex(OBC.UP, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+                MacroCommand(
+                    "Confirm Set 1 (NVRAM Commit)",
+                    getProntoHex(OBC.ENTER_OK, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_SUBMENU_ENTER_MS,
+                ),
+                MacroCommand(
+                    "Exit Menu (Return)",
+                    getProntoHex(OBC.RETURN, RemoteMode.MODE_3),
+                    DigaTimings.DELAY_OSD_NAV_STEP_MS,
+                ),
+            )
 
         // ==========================================
         // 🚨 FACTORY MASTER RESET & SYSTEM HARDENING
         // ==========================================
 
         /** Factory Master NVRAM Reset (Service Command 99 - Displays CLEAR) */
-        val FACTORY_RESET = listOf(
-            MacroCommand("Master Reset (9)", DIGIT_9, 500L),
-            MacroCommand("Confirm Clear (9)", DIGIT_9, 500L)
-        )
+        val FACTORY_RESET =
+            listOf(
+                MacroCommand("Master Reset (9)", DIGIT_9, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+                MacroCommand("Confirm Clear (9)", DIGIT_9, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
 
         /** TVGOS EPG Nightly Spin-Up Bypass (Injects Zip Code 00000) */
-        val TVGOS_DISABLE_ZIP = listOf(
-            MacroCommand("Zip Digit 0", DIGIT_0, 300L),
-            MacroCommand("Zip Digit 0", DIGIT_0, 300L),
-            MacroCommand("Zip Digit 0", DIGIT_0, 300L),
-            MacroCommand("Zip Digit 0", DIGIT_0, 300L),
-            MacroCommand("Zip Digit 0", DIGIT_0, 300L),
-            MacroCommand("Confirm Zip (ENTER)", ENTER_OK, 500L)
-        )
+        val TVGOS_DISABLE_ZIP =
+            listOf(
+                MacroCommand("Zip Digit 0", DIGIT_0, DigaTimings.DELAY_FAST_ZIP_DIGIT_MS),
+                MacroCommand("Zip Digit 0", DIGIT_0, DigaTimings.DELAY_FAST_ZIP_DIGIT_MS),
+                MacroCommand("Zip Digit 0", DIGIT_0, DigaTimings.DELAY_FAST_ZIP_DIGIT_MS),
+                MacroCommand("Zip Digit 0", DIGIT_0, DigaTimings.DELAY_FAST_ZIP_DIGIT_MS),
+                MacroCommand("Zip Digit 0", DIGIT_0, DigaTimings.DELAY_FAST_ZIP_DIGIT_MS),
+                MacroCommand("Confirm Zip (ENTER)", ENTER_OK, DigaTimings.DELAY_SERVICE_DIGIT_MS),
+            )
     }
 }

@@ -2,10 +2,15 @@ package com.vhs.digacommander.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
-import com.vhs.digacommander.data.ir.ConsumerIrTransmitter
-import com.vhs.digacommander.data.model.*
+import com.vhs.digacommander.data.constant.DigaTimings
+import com.vhs.digacommander.data.ir.IrTransmitter
+import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.DigaModelProfile
+import com.vhs.digacommander.data.model.MacroCommand
+import com.vhs.digacommander.data.model.MacroExecutionState
+import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.domain.pipeline.DigaMacroPipeline
+import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,27 +24,27 @@ data class DigaUiState(
     val activeProfile: DigaModelProfile = DigaModelProfile.DMR_EH55,
     val activeMode: RemoteMode = RemoteMode.MODE_1,
     val selectedTabIndex: Int = 0,
-    val vfdMainText: String = "READY",
-    val vfdSubText: String = "DIGA COMMANDER ONLINE",
-    val irStatusText: String = "INITIALIZING",
+    val vfdMainText: String = DigaUiStrings.VFD_READY,
+    val vfdSubText: String = DigaUiStrings.VFD_ONLINE,
+    val irStatusText: String = DigaUiStrings.VFD_INITIALIZING,
     val macroState: MacroExecutionState = MacroExecutionState.Idle,
     val showMultiRegionConfirm: Boolean = false,
     val showResetConfirm: Boolean = false,
     val showAutoRestoreSet2Confirm: Boolean = false,
-    val showAutoRestoreSet3Confirm: Boolean = false
+    val showAutoRestoreSet3Confirm: Boolean = false,
 )
 
 /**
  * MVVM ViewModel managing application state and user intents with Unidirectional Data Flow (UDF).
  */
 class DigaViewModel(
-    private val transmitter: ConsumerIrTransmitter,
-    private val macroPipeline: DigaMacroPipeline = DigaMacroPipeline(transmitter)
+    private val transmitter: IrTransmitter,
+    private val macroPipeline: DigaMacroPipeline = DigaMacroPipeline(transmitter),
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(
-        DigaUiState(irStatusText = computeIrStatus())
-    )
+    private val _uiState =
+        MutableStateFlow(
+            DigaUiState(irStatusText = computeIrStatus()),
+        )
     val uiState: StateFlow<DigaUiState> = _uiState.asStateFlow()
 
     init {
@@ -47,28 +52,35 @@ class DigaViewModel(
         viewModelScope.launch {
             macroPipeline.state.collect { state ->
                 _uiState.update { current ->
-                    val (main, sub) = when (state) {
-                        is MacroExecutionState.Idle -> current.vfdMainText to current.vfdSubText
-                        is MacroExecutionState.Running -> "STEP ${state.step}/${state.totalSteps}" to "SENDING: ${state.currentLabel}"
-                        is MacroExecutionState.Completed -> "COMPLETED" to "SEQUENCE TRANSMITTED SUCCESSFULLY"
-                        is MacroExecutionState.Cancelled -> "ABORTED" to "CANCELLED BY OPERATOR"
-                        is MacroExecutionState.Error -> "ERROR" to state.message
-                    }
+                    val (main, sub) =
+                        when (state) {
+                            is MacroExecutionState.Idle -> current.vfdMainText to current.vfdSubText
+                            is MacroExecutionState.Running ->
+                                "${DigaUiStrings.VFD_STEP_PREFIX}${state.step}/${state.totalSteps}" to
+                                    "${DigaUiStrings.VFD_SENDING_PREFIX}${state.currentLabel}"
+                            is MacroExecutionState.Completed ->
+                                DigaUiStrings.VFD_COMPLETED to DigaUiStrings.VFD_COMPLETED_SUB
+                            is MacroExecutionState.Cancelled ->
+                                DigaUiStrings.VFD_ABORTED to DigaUiStrings.VFD_ABORTED_SUB
+                            is MacroExecutionState.Error ->
+                                DigaUiStrings.VFD_ERROR to state.message
+                        }
                     current.copy(
                         macroState = state,
                         vfdMainText = main,
-                        vfdSubText = sub
+                        vfdSubText = sub,
                     )
                 }
             }
         }
     }
 
-    private fun computeIrStatus(): String = when {
-        !transmitter.isAvailable -> "EMULATOR MODE (NO IR HARDWARE)"
-        transmitter.isFrequencySupported(37000) -> "IR HARDWARE: ONLINE (37 kHz)"
-        else -> "IR HARDWARE: ONLINE (LIMITED)"
-    }
+    private fun computeIrStatus(): String =
+        when {
+            !transmitter.isAvailable -> DigaUiStrings.VFD_EMULATOR_MODE
+            transmitter.isFrequencySupported(DigaTimings.CARRIER_MATSUSHITA_HZ) -> DigaUiStrings.VFD_IR_ONLINE_37K
+            else -> DigaUiStrings.VFD_IR_ONLINE_LIMITED
+        }
 
     fun onProfileSelected(profile: DigaModelProfile) {
         _uiState.update { it.copy(activeProfile = profile) }
@@ -78,8 +90,8 @@ class DigaViewModel(
         _uiState.update {
             it.copy(
                 activeMode = mode,
-                vfdMainText = "CHANNEL: ${mode.label}",
-                vfdSubText = "ACTIVE SUBDEVICE: 0x${mode.subdevice.toString(16).uppercase()}"
+                vfdMainText = "${DigaUiStrings.VFD_CHANNEL_PREFIX}${mode.label}",
+                vfdSubText = "${DigaUiStrings.VFD_SUBDEVICE_PREFIX}${mode.subdevice.toString(16).uppercase()}",
             )
         }
     }
@@ -88,16 +100,20 @@ class DigaViewModel(
         _uiState.update { it.copy(selectedTabIndex = index) }
     }
 
-    fun sendCommand(label: String, command: Int, isVcr: Boolean = false) {
+    fun sendCommand(
+        label: String,
+        command: Int,
+        isVcr: Boolean = false,
+    ) {
         val mode = _uiState.value.activeMode
         val device = if (isVcr) DigaDevice.VCR else DigaDevice.DVD_HDD
         val channelSuffix = if (mode != RemoteMode.MODE_1) " [${mode.label}]" else ""
-        val deckSuffix = if (isVcr) " (VCR)" else ""
+        val deckSuffix = if (isVcr) DigaUiStrings.SUFFIX_DECK_VCR else ""
 
         _uiState.update {
             it.copy(
                 vfdMainText = "$label$deckSuffix$channelSuffix",
-                vfdSubText = "TRANSMITTING 48-BIT KASEIKYO PULSE"
+                vfdSubText = DigaUiStrings.VFD_TRANSMITTING_PULSE,
             )
         }
 
@@ -105,8 +121,8 @@ class DigaViewModel(
         result.onFailure { error ->
             _uiState.update {
                 it.copy(
-                    vfdMainText = "IR ERROR",
-                    vfdSubText = error.message ?: "Failed to transmit pulse"
+                    vfdMainText = DigaUiStrings.VFD_ERROR,
+                    vfdSubText = error.message ?: DigaUiStrings.VFD_FAILED_TRANSMIT_PULSE,
                 )
             }
         }

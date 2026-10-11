@@ -1,5 +1,6 @@
 package com.vhs.digacommander.data.ir
 
+import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.model.IrSignal
 import kotlin.math.roundToInt
 
@@ -8,8 +9,7 @@ import kotlin.math.roundToInt
  * ConsumerIrManager compatible microseconds pulse arrays.
  */
 object ProntoHexConverter {
-
-    private const val PRONTO_TIMEBASE_CONSTANT = 0.241246
+    private const val PRONTO_TIMEBASE_CONSTANT = DigaTimings.CARRIER_FREQ_DIVISOR_BASE
 
     /**
      * Converts a raw Pronto Hex string into an [IrSignal].
@@ -17,7 +17,7 @@ object ProntoHexConverter {
      */
     fun convert(prontoHex: String): IrSignal {
         val tokens = prontoHex.trim().split("\\s+".toRegex())
-        require(tokens.size >= 4) { "Invalid Pronto Hex: missing minimum header words" }
+        require(tokens.size >= DigaTimings.PRONTO_HEADER_WORD_COUNT) { "Invalid Pronto Hex: missing minimum header words" }
 
         val formatCode = tokens[0].toInt(16)
         require(formatCode == 0) { "Only raw learned Pronto signals (format 0000) are supported" }
@@ -29,11 +29,12 @@ object ProntoHexConverter {
         val carrierFreq = (1_000_000.0 / (freqCode * PRONTO_TIMEBASE_CONSTANT)).roundToInt()
         val cycleToMicroseconds = 1_000_000.0 / carrierFreq
 
-        val rawDataWords = tokens.subList(4, tokens.size)
-        val pattern = IntArray(rawDataWords.size) { index ->
-            val cycles = rawDataWords[index].toInt(16)
-            (cycles * cycleToMicroseconds).roundToInt()
-        }
+        val rawDataWords = tokens.subList(DigaTimings.PRONTO_HEADER_WORD_COUNT, tokens.size)
+        val pattern =
+            IntArray(rawDataWords.size) { index ->
+                val cycles = rawDataWords[index].toInt(16)
+                (cycles * cycleToMicroseconds).roundToInt()
+            }
 
         return IrSignal(carrierFreq, pattern)
     }
@@ -41,7 +42,8 @@ object ProntoHexConverter {
     /**
      * Functional wrapper returning a Kotlin [Result] for pure error handling.
      */
-    fun convertCatching(prontoHex: String): Result<IrSignal> = runCatching {
-        convert(prontoHex)
-    }
+    fun convertCatching(prontoHex: String): Result<IrSignal> =
+        runCatching {
+            convert(prontoHex)
+        }
 }

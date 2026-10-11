@@ -8,13 +8,13 @@ package com.vhs.digacommander.data.model
  */
 data class IrSignal(
     val carrierFrequency: Int,
-    val patternMicroseconds: IntArray
+    val patternMicroseconds: IntArray,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is IrSignal) return false
         return carrierFrequency == other.carrierFrequency &&
-                patternMicroseconds.contentEquals(other.patternMicroseconds)
+            patternMicroseconds.contentEquals(other.patternMicroseconds)
     }
 
     override fun hashCode(): Int = 31 * carrierFrequency + patternMicroseconds.contentHashCode()

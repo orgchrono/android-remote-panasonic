@@ -30,63 +30,68 @@ val VfdGlow = Color(0xFF00E5FF)
 val VfdDim = Color(0xFF004D40)
 val VfdText = Color(0xFF80DEEA)
 
-val DigaTypography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+val DigaTypography =
+    Typography(
+        bodyLarge =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                letterSpacing = 0.5.sp,
+            ),
+        titleLarge =
+            TextStyle(
+                fontFamily = FontFamily.Default,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                lineHeight = 28.sp,
+                letterSpacing = 0.sp,
+            ),
+        labelSmall =
+            TextStyle(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.5.sp,
+            ),
     )
-)
 
-private val DarkColorScheme = darkColorScheme(
-    primary = DigaBlueLight,
-    onPrimary = Color.Black,
-    secondary = DigaGreen,
-    onSecondary = Color.White,
-    tertiary = DigaAmber,
-    background = DigaDarkBackground,
-    surface = DigaSurface,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    surfaceVariant = DigaSurfaceVariant,
-    onSurfaceVariant = Color(0xFFCFD8DC)
-)
+private val DarkColorScheme =
+    darkColorScheme(
+        primary = DigaBlueLight,
+        onPrimary = Color.Black,
+        secondary = DigaGreen,
+        onSecondary = Color.White,
+        tertiary = DigaAmber,
+        background = DigaDarkBackground,
+        surface = DigaSurface,
+        onBackground = Color.White,
+        onSurface = Color.White,
+        surfaceVariant = DigaSurfaceVariant,
+        onSurfaceVariant = Color(0xFFCFD8DC),
+    )
 
 @Composable
 fun PanasonicDigaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = DigaTypography,
-        content = content
+        content = content,
     )
 }
 
 @Composable
 fun PanasonicDigaCommanderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     PanasonicDigaTheme(
         darkTheme = darkTheme,
-        content = content
+        content = content,
     )
 }

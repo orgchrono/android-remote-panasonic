@@ -11,5 +11,5 @@ enum class DigaDevice(val id: Int) {
     VCR(0x90),
 
     /** 0x01 (1) - Panasonic Viera television controls */
-    TV(0x01)
+    TV(0x01),
 }

@@ -11,13 +11,15 @@ package com.vhs.digacommander.data.model
 enum class RemoteMode(val subdevice: Int, val label: String) {
     MODE_1(0x00, "SET 1 (Default)"),
     MODE_2(0x10, "SET 2"),
-    MODE_3(0x20, "SET 3");
+    MODE_3(0x20, "SET 3"),
+    ;
 
     companion object {
-        fun fromInt(mode: Int): RemoteMode = when (mode) {
-            2 -> MODE_2
-            3 -> MODE_3
-            else -> MODE_1
-        }
+        fun fromInt(mode: Int): RemoteMode =
+            when (mode) {
+                2 -> MODE_2
+                3 -> MODE_3
+                else -> MODE_1
+            }
     }
 }

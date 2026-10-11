@@ -14,7 +14,6 @@ import org.junit.Test
  * Pronto Hex parsing, carrier frequency computation, and macro catalog integrity.
  */
 class ProntoHexConverterTest {
-
     @Test
     fun testProntoHexCarrierFrequencyConversion() {
         // Frequency code 0x0070 (112 decimal) -> 4145146 / 112 = 37010 Hz
@@ -49,37 +48,38 @@ class ProntoHexConverterTest {
 
     @Test
     fun testStandardMirroredDigaCommandsIntegrity() {
-        val standardCodes = listOf(
-            "DRIVE_SELECT" to PanasonicDigaCatalog.DRIVE_SELECT,
-            "DIRECT_NAVIGATOR" to PanasonicDigaCatalog.DIRECT_NAVIGATOR,
-            "FUNCTIONS" to PanasonicDigaCatalog.FUNCTIONS,
-            "TOP_MENU" to PanasonicDigaCatalog.TOP_MENU,
-            "OPTION_SUB_MENU" to PanasonicDigaCatalog.OPTION_SUB_MENU,
-            "TIME_SLIP" to PanasonicDigaCatalog.TIME_SLIP,
-            "MANUAL_SKIP_30S" to PanasonicDigaCatalog.MANUAL_SKIP_30S,
-            "MANUAL_REPLAY_10S" to PanasonicDigaCatalog.MANUAL_REPLAY_10S,
-            "CREATE_CHAPTER" to PanasonicDigaCatalog.CREATE_CHAPTER,
-            "DELETE_TITLE" to PanasonicDigaCatalog.DELETE_TITLE,
-            "REC" to PanasonicDigaCatalog.REC,
-            "REC_MODE" to PanasonicDigaCatalog.REC_MODE,
-            "EXT_LINK" to PanasonicDigaCatalog.EXT_LINK,
-            "INPUT_SELECT" to PanasonicDigaCatalog.INPUT_SELECT,
-            "CH_UP" to PanasonicDigaCatalog.CH_UP,
-            "CH_DOWN" to PanasonicDigaCatalog.CH_DOWN,
-            "PLAY" to PanasonicDigaCatalog.PLAY,
-            "STOP" to PanasonicDigaCatalog.STOP,
-            "PAUSE" to PanasonicDigaCatalog.PAUSE,
-            "FAST_FORWARD" to PanasonicDigaCatalog.FAST_FORWARD,
-            "REWIND" to PanasonicDigaCatalog.REWIND,
-            "SKIP_NEXT" to PanasonicDigaCatalog.SKIP_NEXT,
-            "SKIP_PREV" to PanasonicDigaCatalog.SKIP_PREV,
-            "AUDIO" to PanasonicDigaCatalog.AUDIO,
-            "SUBTITLE" to PanasonicDigaCatalog.SUBTITLE,
-            "STATUS" to PanasonicDigaCatalog.STATUS,
-            "DISPLAY" to PanasonicDigaCatalog.DISPLAY,
-            "GUIDE" to PanasonicDigaCatalog.GUIDE,
-            "PROG_CHECK" to PanasonicDigaCatalog.PROG_CHECK
-        )
+        val standardCodes =
+            listOf(
+                "DRIVE_SELECT" to PanasonicDigaCatalog.DRIVE_SELECT,
+                "DIRECT_NAVIGATOR" to PanasonicDigaCatalog.DIRECT_NAVIGATOR,
+                "FUNCTIONS" to PanasonicDigaCatalog.FUNCTIONS,
+                "TOP_MENU" to PanasonicDigaCatalog.TOP_MENU,
+                "OPTION_SUB_MENU" to PanasonicDigaCatalog.OPTION_SUB_MENU,
+                "TIME_SLIP" to PanasonicDigaCatalog.TIME_SLIP,
+                "MANUAL_SKIP_30S" to PanasonicDigaCatalog.MANUAL_SKIP_30S,
+                "MANUAL_REPLAY_10S" to PanasonicDigaCatalog.MANUAL_REPLAY_10S,
+                "CREATE_CHAPTER" to PanasonicDigaCatalog.CREATE_CHAPTER,
+                "DELETE_TITLE" to PanasonicDigaCatalog.DELETE_TITLE,
+                "REC" to PanasonicDigaCatalog.REC,
+                "REC_MODE" to PanasonicDigaCatalog.REC_MODE,
+                "EXT_LINK" to PanasonicDigaCatalog.EXT_LINK,
+                "INPUT_SELECT" to PanasonicDigaCatalog.INPUT_SELECT,
+                "CH_UP" to PanasonicDigaCatalog.CH_UP,
+                "CH_DOWN" to PanasonicDigaCatalog.CH_DOWN,
+                "PLAY" to PanasonicDigaCatalog.PLAY,
+                "STOP" to PanasonicDigaCatalog.STOP,
+                "PAUSE" to PanasonicDigaCatalog.PAUSE,
+                "FAST_FORWARD" to PanasonicDigaCatalog.FAST_FORWARD,
+                "REWIND" to PanasonicDigaCatalog.REWIND,
+                "SKIP_NEXT" to PanasonicDigaCatalog.SKIP_NEXT,
+                "SKIP_PREV" to PanasonicDigaCatalog.SKIP_PREV,
+                "AUDIO" to PanasonicDigaCatalog.AUDIO,
+                "SUBTITLE" to PanasonicDigaCatalog.SUBTITLE,
+                "STATUS" to PanasonicDigaCatalog.STATUS,
+                "DISPLAY" to PanasonicDigaCatalog.DISPLAY,
+                "GUIDE" to PanasonicDigaCatalog.GUIDE,
+                "PROG_CHECK" to PanasonicDigaCatalog.PROG_CHECK,
+            )
 
         for ((name, prontoHex) in standardCodes) {
             val converted = ProntoHexConverter.convert(prontoHex)
@@ -91,30 +91,31 @@ class ProntoHexConverterTest {
 
     @Test
     fun testAllCatalogMacrosIntegrity() {
-        val macros = listOf(
-            PanasonicDigaCatalog.Macros.LASER_HOURS,
-            PanasonicDigaCatalog.Macros.RAM_DRIVE_LAST_ERROR,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_LATEST,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_1,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_2,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_3,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_4,
-            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_5,
-            PanasonicDigaCatalog.Macros.REGION_READOUT,
-            PanasonicDigaCatalog.Macros.HDD_SURFACE_TEST,
-            PanasonicDigaCatalog.Macros.VFD_SEGMENTS_TEST,
-            PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_80,
-            PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_81,
-            PanasonicDigaCatalog.Macros.TRAY_CYCLE_TEST,
-            PanasonicDigaCatalog.Macros.CLEAR_ERROR_F00,
-            PanasonicDigaCatalog.Macros.MULTI_REGION_HACK,
-            PanasonicDigaCatalog.Macros.VERIFY_REGION_FREE,
-            PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK,
-            PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1,
-            PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1,
-            PanasonicDigaCatalog.Macros.FACTORY_RESET,
-            PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP
-        )
+        val macros =
+            listOf(
+                PanasonicDigaCatalog.Macros.LASER_HOURS,
+                PanasonicDigaCatalog.Macros.RAM_DRIVE_LAST_ERROR,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_LATEST,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_1,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_2,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_3,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_4,
+                PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_5,
+                PanasonicDigaCatalog.Macros.REGION_READOUT,
+                PanasonicDigaCatalog.Macros.HDD_SURFACE_TEST,
+                PanasonicDigaCatalog.Macros.VFD_SEGMENTS_TEST,
+                PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_80,
+                PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_81,
+                PanasonicDigaCatalog.Macros.TRAY_CYCLE_TEST,
+                PanasonicDigaCatalog.Macros.CLEAR_ERROR_F00,
+                PanasonicDigaCatalog.Macros.MULTI_REGION_HACK,
+                PanasonicDigaCatalog.Macros.VERIFY_REGION_FREE,
+                PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK,
+                PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1,
+                PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1,
+                PanasonicDigaCatalog.Macros.FACTORY_RESET,
+                PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP,
+            )
 
         for (macro in macros) {
             assertTrue("Macro list must not be empty", macro.isNotEmpty())
@@ -147,22 +148,24 @@ class ProntoHexConverterTest {
 
     @Test
     fun testKaseikyoProtocolParametricCreation() {
-        val pulsesDvdMode1 = KaseikyoProtocol.synthesizePulsePattern(
-            DigaDevice.DVD_HDD.id,
-            RemoteMode.MODE_1,
-            PanasonicDigaCatalog.OBC.POWER
-        )
+        val pulsesDvdMode1 =
+            KaseikyoProtocol.synthesizePulsePattern(
+                DigaDevice.DVD_HDD.id,
+                RemoteMode.MODE_1,
+                PanasonicDigaCatalog.OBC.POWER,
+            )
         assertEquals(100, pulsesDvdMode1.size)
         assertEquals(3459, pulsesDvdMode1[0]) // Lead-in mark
         assertEquals(1729, pulsesDvdMode1[1]) // Lead-in space
-        assertEquals(432, pulsesDvdMode1[2])  // Bit mark
+        assertEquals(432, pulsesDvdMode1[2]) // Bit mark
 
         // Validate that synthesized Pronto Hex parses bit-accurately
-        val prontoHex = KaseikyoProtocol.synthesizeProntoHex(
-            DigaDevice.DVD_HDD.id,
-            RemoteMode.MODE_1,
-            PanasonicDigaCatalog.OBC.POWER
-        )
+        val prontoHex =
+            KaseikyoProtocol.synthesizeProntoHex(
+                DigaDevice.DVD_HDD.id,
+                RemoteMode.MODE_1,
+                PanasonicDigaCatalog.OBC.POWER,
+            )
         val converted = ProntoHexConverter.convert(prontoHex)
         assertEquals(37010, converted.carrierFrequency)
         assertEquals(100, converted.patternMicroseconds.size)
@@ -179,11 +182,12 @@ class ProntoHexConverterTest {
         }
 
         // Test VCR Deck addressing (Device 0x90)
-        val vcrPlayCode = PanasonicDigaCatalog.getProntoHex(
-            PanasonicDigaCatalog.OBC.PLAY,
-            mode = RemoteMode.MODE_1,
-            device = DigaDevice.VCR
-        )
+        val vcrPlayCode =
+            PanasonicDigaCatalog.getProntoHex(
+                PanasonicDigaCatalog.OBC.PLAY,
+                mode = RemoteMode.MODE_1,
+                device = DigaDevice.VCR,
+            )
         val vcrSignal = ProntoHexConverter.convert(vcrPlayCode)
         assertEquals(37010, vcrSignal.carrierFrequency)
         assertEquals(100, vcrSignal.patternMicroseconds.size)
