@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
     Local build and test automation script for Panasonic DIGA Commander Pro.
+    Compatible with Windows PowerShell 5.1+, PowerShell 7+, and cross-platform PowerShell.
 
 .DESCRIPTION
     Automates JDK 17 environment discovery, Gradle wrapper invocation,
@@ -55,11 +56,12 @@ if (-not $env:ANDROID_HOME -and -not $env:ANDROID_SDK_ROOT) {
         Write-Host "[+] Auto-detected ANDROID_HOME at: $env:ANDROID_HOME" -ForegroundColor Green
     } else {
         Write-Host "[!] Note: Android SDK not found locally at $defaultSdk" -ForegroundColor Yellow
-        Write-Host "    If building APK locally fails due to missing SDK, install Android Studio" -ForegroundColor Yellow
+        Write-Host "    If building APK locally fails due to missing SDK, run setup-android-sdk.bat" -ForegroundColor Yellow
         Write-Host "    or use the automated GitHub Actions CI/CD pipeline which builds release APKs automatically." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "[+] Android SDK configured: $($env:ANDROID_HOME ?? $env:ANDROID_SDK_ROOT)" -ForegroundColor Green
+    $configuredSdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { $env:ANDROID_SDK_ROOT }
+    Write-Host "[+] Android SDK configured: $configuredSdk" -ForegroundColor Green
 }
 
 # 3. Verify Gradle Wrapper
