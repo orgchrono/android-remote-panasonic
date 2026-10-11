@@ -53,7 +53,7 @@ set "ANDROID_SDK_ROOT=%SDK_DIR%"
 (echo y & echo y & echo y & echo y) | "%CMDLINE_TOOLS_DIR%\bin\sdkmanager.bat" --licenses >nul 2>&1
 call "%CMDLINE_TOOLS_DIR%\bin\sdkmanager.bat" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-echo sdk.dir=%SDK_DIR:\=\\% > "%~dp0local.properties"
+(echo sdk.dir=%SDK_DIR:\=\\%)>"%~dp0local.properties"
 echo [+] Generated local.properties with sdk.dir = %SDK_DIR%
 
 echo [SUCCESS] Android SDK is ready! You can now run build-local.bat
