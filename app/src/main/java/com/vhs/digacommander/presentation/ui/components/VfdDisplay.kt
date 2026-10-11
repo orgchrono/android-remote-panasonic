@@ -1,4 +1,4 @@
-package com.vhs.digacommander.ui.components
+package com.vhs.digacommander.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,16 +13,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vhs.digacommander.ui.theme.VfdBackground
-import com.vhs.digacommander.ui.theme.VfdDim
-import com.vhs.digacommander.ui.theme.VfdGlow
-import com.vhs.digacommander.ui.theme.VfdText
+import com.vhs.digacommander.presentation.theme.VfdBackground
+import com.vhs.digacommander.presentation.theme.VfdDim
+import com.vhs.digacommander.presentation.theme.VfdGlow
+import com.vhs.digacommander.presentation.theme.VfdText
 
+/**
+ * Retro Vacuum Fluorescent Display (VFD) simulation component.
+ */
 @Composable
 fun VfdDisplay(
     mainText: String,
     subText: String,
     irStatusText: String,
+    headerTitle: String = "PANASONIC DIGA RECORDER",
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -41,7 +45,7 @@ fun VfdDisplay(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "PANASONIC DIGA DMR-EH55",
+                    text = headerTitle,
                     color = VfdDim,
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,

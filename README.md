@@ -1,173 +1,179 @@
 # 📱 Panasonic DIGA Commander (Android IR)
 
-Aplicativo Android nativo em **Kotlin** com interface moderna em **Jetpack Compose**, projetado especificamente para operar, diagnosticar e aplicar hacks de bancada em gravadores de DVD/HDD da linha **Panasonic DIGA** (ex: **DMR-EH55**, DMR-EH50, DMR-EH65, DMR-EX768, DMR-ES10/15) através do emissor infravermelho nativo (*Consumer IR Blaster*) do tablet **Samsung Galaxy Tab S 8.4 LTE (`SM-T805M`)**.
+A native, high-precision Android application built in **Kotlin** and **Jetpack Compose** following **Clean Architecture (MVVM + Functional Programming)**. Specifically engineered to control, diagnose, and execute service bench macros and firmware hacks on **Panasonic DIGA DVD/HDD recorders** (e.g., **DMR-EH55**, DMR-EH50, DMR-EH65, DMR-EX768, DMR-ES10, DMR-ES15, and VHS/DVD Combos such as DMR-EH75V and DMR-ES30V) using the native hardware infrared emitter (*Consumer IR Blaster*) of the **Samsung Galaxy Tab S 8.4 LTE (`SM-T805M` / `chagalllte`)** running LineageOS 17.1 (Android 10, API 29).
 
 ---
 
-## ⚡ Como Testar Hoje Mesmo no Tablet (Sem Compilar Nada)
+## ⚡ Instant Bench Testing (No Compilation Required)
 
-Se você já estiver com o tablet **Samsung SM-T805M** em mãos e quiser testar o hardware IR imediatamente contra o gravador:
+If you already have your **Samsung SM-T805M** tablet running LineageOS 17.1 / Android 10 and want to test the infrared hardware against your DIGA recorder right away:
 
-1. Instale o aplicativo gratuito **[irplus - WAVE IR Remote](https://play.google.com/store/apps/details?id=net.binarymode.android.irplus)** na Google Play Store.
-2. Transfira o arquivo para o tablet:
-   ```
-   Panasonic_DMR_EH55_Commander.irplus
-   ```
-3. No app **irplus**, toque no menu de 3 pontos no canto superior direito ➔ **Importar (Import)** ➔ selecione o arquivo `Panasonic_DMR_EH55_Commander.irplus`.
-4. O layout completo com controle remoto e **12 botões dedicados de macro** já estará funcional:
-   * **Horas Laser (`41`)**: Horímetro óptico (`L****`).
-   * **Erro RAM Drive (`42`)**: Último erro da unidade óptica.
-   * **Último Erro (`01`)**: Falha geral (`U**`, `H**`, `F**`).
-   * **Limpar Erro (`98`)**: Grava `F00`.
-   * **Ler Região (`02`)**: Região gravada (`04` Brasil, `00` Livre).
-   * **Teste HDD (`31`)**: Varredura física de setores e MEIHDFS.
-   * **Teste VFD (`00`)**: Todos os segmentos acesos.
-   * **Ciclo Gaveta (`91`)**: Teste de fadiga mecânica.
-   * **I/O Vídeo (`80`/`81`)**: Testes de barramento de saída.
-   * **Sincronizar SET 1 / SET 2 / SET 3**: Pareamento de canal IR.
-   * **Destravar Child Lock**: Pulso sustentado de ENTER.
-   * **★ Hack Multi-Região ★**: 12 passos automáticos (DVD Region Free).
-   * **⚠ Factory Reset (99)**: Inicialização total da NVRAM.
+### Option A: Using Free & Open Source Software (FOSS)
+1. Download **[IR Blaster Remote (iodn / nslabs)](https://github.com/iodn/android-ir-blaster)** from [F-Droid / IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/org.nslabs.ir_blaster?repo=main) or the GitHub Releases page (GPL-3.0 licensed).
+2. Transfer any of our ready-to-use profiles from the [`profiles/`](profiles/) directory:
+   * [`profiles/Panasonic_DMR_EH55_Commander.irplus`](profiles/Panasonic_DMR_EH55_Commander.irplus) (Complete DMR-EH55 physical remote + 12 service macros)
+   * [`profiles/Panasonic_DIGA_ES10_ES15_TBC.irplus`](profiles/Panasonic_DIGA_ES10_ES15_TBC.irplus) (Optimized for DMR-ES10 / DMR-ES15 TBC pass-through)
+   * [`profiles/Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus`](profiles/Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus) (Dual Deck DVD 0xB0 & VCR 0x90 + dubbing)
+   * [`profiles/Panasonic_DIGA_Universal_Modes_1_2_3.irplus`](profiles/Panasonic_DIGA_Universal_Modes_1_2_3.irplus) (Multi-mode pairing and recovery)
+3. Open the app, select **Import**, choose the `.irplus` XML file, and begin testing immediately.
+
+### Option B: Using irplus (Google Play)
+1. Install **[irplus - WAVE IR Remote](https://play.google.com/store/apps/details?id=net.binarymode.android.irplus)** from the Google Play Store.
+2. Tap the 3-dot overflow menu ➔ **Import** ➔ select the profile from [`profiles/`](profiles/).
+3. All remote controls and macros will be fully operational.
 
 ---
 
-## 🧰 Catálogo Completo de Hacks e Funções Secretas
+## 🔄 Automated OSD Channel Recovery (SET 2 / SET 3 ➔ SET 1)
 
-| Macro / Comando | Entrada | Descrição Técnica & Resposta no VFD |
+### The Problem:
+When a Panasonic DIGA recorder is configured for an alternate remote control code, its front VFD panel flashes **`SET 2`** or **`SET 3`** whenever any standard remote button is pressed, refusing all commands. Previously, recovering from this required either:
+- Having a physical remote with the exact button combination (`ENTER` + `1`/`2`/`3` held for 3 seconds), or
+- Manually navigating the TV on-screen menu if an alternate remote was available.
+
+### The Solution:
+Our app features **1-Touch Automated OSD Channel Recovery Macros**:
+1. **`AUTO_RESTORE_SET2_TO_SET1`**: Transmits with Subdevice `0x10` (Mode 2) so the locked recorder accepts every keystroke:
+   $$\text{FUNCTIONS} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{DOWN} \longrightarrow \text{ENTER} \longrightarrow \text{UP} \longrightarrow \text{ENTER} \longrightarrow \text{RETURN}$$
+2. **`AUTO_RESTORE_SET3_TO_SET1`**: Transmits with Subdevice `0x20` (Mode 3) to execute the matching recovery traversal.
+
+The recorder automatically navigates its Setup menu, selects **Remote Control Code**, changes the setting back to **Set 1**, and commits the value to NVRAM without manual interaction.
+
+---
+
+## 🧰 Master Catalog of Hacks, Diagnostics & Bench Macros
+
+| Macro / Command | Key Sequence | Technical Description & VFD Display Output |
 | :--- | :--- | :--- |
-| **Horas Laser** | `[4]` `[1]` | Exibe o tempo total acumulado em horas de emissão do cabeçote óptico (`L****`). |
-| **Erro RAM Drive** | `[4]` `[2]` | Exibe o último código de falha da unidade de gravação óptica. |
-| **Auto-Diagnóstico Geral** | `[0]` `[1]` | Exibe o código de erro geral mais recente gravado pelo CPU (`U61`, `H19`, etc.). |
-| **Histórico EEPROM (Slots 1 a 5)** | `[6]` `[5]` ➔ `01`..`05` | Permite navegar pelos registros históricos dos últimos 19 erros salvos na EEPROM. |
-| **Limpeza de Erro para F00** | `[9]` `[8]` | Grava `F00` na memória de falha temporária sem apagar configurações do usuário. |
-| **Leitura de Código de Região** | `[0]` `[2]` | Exibe a região por 5 segundos (`04` Brasil, `01` EUA, `02` Europa, `00` Livre). |
-| **Teste de Superfície HDD** | `[3]` `[1]` | Inspeciona os setores físicos do disco rígido e realoca blocos danificados no MEIHDFS. |
-| **Teste de Display VFD** | `[0]` `[0]` | Acende 100% dos segmentos e ícones fluorescentes do painel frontal. |
-| **Teste Mecânico de Gaveta** | `[9]` `[1]` | Inicia ciclo perpétuo de abertura e fechamento para teste de correia de carregamento. |
-| **Validação de Saída de Vídeo** | `[8]` `[0]` / `[8]` `[1]` | Alterna padrões de teste para calibrar barramento RGB / Componente / S-Video. |
-| **★ Hack Multi-Região ★** | `1`..`0` ➔ `AUDIO` ➔ `MEDIA` | Sequência de 12 passos com intervalo de 500 ms desbloqueando o aparelho para Região 0. |
-| **Pareamento SET 1 / 2 / 3** | `OK` + `1`/`2`/`3` | Resolve os erros "SET 1", "SET 2" e "SET 3" quando o aparelho está em outro canal. |
-| **Destravar Child Lock** | `[ENTER]` contínuo 5s | Desbloqueia os botões frontais travados em `LOCKED` ou `X-HOLD`. |
-| **Bypass Noturno TVGOS** | `00000` no campo Zip Code | Desliga a busca noturna das 3:00 AM que desgasta o motor do HDD. |
-| **Hard Reset de Fábrica** | `[9]` `[9]` | Limpa toda a EEPROM/NVRAM e restaura o aparelho para padrão de fábrica (`CLEAR`). |
-
-## 📚 Documentação Técnica Completa (English Engineering Dossier)
-
-Para o guia aprofundado de engenharia de bancada, consulte o documento:
-👉 **[`PANASONIC_DIGA_HACKS_GUIDE.md`](PANASONIC_DIGA_HACKS_GUIDE.md)**
-
-O dossiê inclui:
-* **Física do Protocolo Kaseikyo 48-bit**: Portadora de 37.010 kHz, lead-in, codificação PWM de pulsos e estrutura de checksum XOR.
-* **Tabela de 17 Hacks e Modos de Serviço**: Sequência de teclas, controle exigido, estado do aparelho, operação interna do microcontrolador SuperH SH-4 e efeito detalhado.
-* **Tabela de Auto-Diagnóstico**: Decodificação completa de erros `U**` (operacionais), `H**` (hardware/servos) e `F**` (falhas críticas de EEPROM e barramento).
-* **Referência Cruzada Hexadecimal**: Todos os 52 códigos de infravermelho no padrão Pronto Hex.
+| **Laser Operating Hours** | `[4]` `[1]` | Displays cumulative optical pickup diode laser emission time in hours (`L****`). |
+| **RAM Drive Error Code** | `[4]` `[2]` | Displays the most recent error code logged by the optical DVD-RAM drive mechanism. |
+| **General Self-Diagnostics** | `[0]` `[1]` | Reads the latest general CPU fault code recorded (`U61`, `H19`, etc.). |
+| **EEPROM Error Log (Slots 1–5)** | `[6]` `[5]` ➔ `01`..`05` | Navigates the last 19 historical error events stored in non-volatile EEPROM memory. |
+| **Clear Error Buffer to F00** | `[9]` `[8]` | Writes `F00` to the temporary error buffer without erasing user configurations. |
+| **Destination Region Readout** | `[0]` `[2]` | Displays active DVD region code for 5 seconds (`01` US, `02` Europe, `04` Brazil, `00` Free). |
+| **HDD SMART Surface Scan** | `[3]` `[1]` | Initiates physical disk sector scan and automatic MEIHDFS bad block reallocation. |
+| **VFD Display Diagnostic** | `[0]` `[0]` | Illuminates 100% of front-panel vacuum fluorescent display segments and annunciators. |
+| **Loading Tray Endurance Cycle** | `[9]` `[1]` | Continuous open/close mechanical cycle to stress-test loading motor and belts. |
+| **Video I/O Pattern Validation** | `[8]` `[0]` / `[8]` `[1]` | Outputs calibration patterns for RGB, Component, and S-Video bus inspection. |
+| **★ Multi-Region (Region Free) ★** | `1`..`0` ➔ `AUDIO` ➔ `MEDIA` | 12-pulse sequence with 500 ms intervals permanently unlocking Region 0 playback. |
+| **Auto-Restore SET 2 ➔ SET 1** | 10-step OSD Sequence | Automated OSD menu traversal on Mode 2 restoring NVRAM back to Set 1. |
+| **Auto-Restore SET 3 ➔ SET 1** | 11-step OSD Sequence | Automated OSD menu traversal on Mode 3 restoring NVRAM back to Set 1. |
+| **Child Lock Emergency Override** | `[ENTER]` held 5s | Releases front-panel microcontroller lockout (`LOCKED` or `X-HOLD`). |
+| **TVGOS Nightly Spin-Up Bypass** | `00000` in Zip Field | Injects `00000` to disable 3:00 AM nightly HDD spin-up for extinct analog EPG broadcasts. |
+| **Factory Master NVRAM Reset** | `[9]` `[9]` | Clears all NVRAM/EEPROM parameters and restores factory default state (`CLEAR`). |
 
 ---
 
-## 🎮 Espelhamento Integral do Controle Remoto Físico (EUR7729KG0)
+## 📚 Technical Documentation & Research Dossiers
 
-O aplicativo e o perfil `.irplus` espelham com precisão cirúrgica todas as 52 funções do controle remoto original do Panasonic DMR-EH55:
+Detailed engineering documentation is organized inside the [`docs/`](docs/) directory:
 
-| Seção / Módulo | Teclas & Comandos Espelhados |
-| :--- | :--- |
-| **Sistema & Seleção de Mídia** | `POWER`, `OPEN / CLOSE` (Eject da gaveta), `DRIVE SELECT` (Cicla HDD / DVD / SD-MMC), `INPUT SELECT` (L1, L2, L3, DV) |
-| **Navegação & Menus** | `FUNCTIONS` (Menu DIGA principal), `DIRECT NAVIGATOR` (Lista de gravações), `TOP MENU` (Menu raiz de DVD), `OPTION / SUB MENU` (Menu de contexto), D-Pad (`▲`, `▼`, `◀`, `▶`), `ENTER / OK`, `RETURN`, `EXIT` |
-| **Deck de Transporte** | `PLAY ▶`, `PAUSE ⏸`, `STOP ⏹`, `ANTERIOR |◀◀`, `PRÓXIMO ▶▶|`, `VOLTAR ◀◀`, `AVANÇAR ▶▶` |
-| **Edição & Recursos DIGA** | `TIME SLIP` (Visualização simultânea / Picture-in-Picture), `MANUAL REPLAY` (-10s), `MANUAL SKIP` (+30s), `CREATE CHAPTER` (Criar capítulo), `DELETE TITLE` (Apagar título), `AUDIO`, `SUBTITLE` |
-| **Gravação & Sintonizador** | `REC ●` (Gravação instantânea), `REC MODE` (XP, SP, LP, EP, FR), `EXT LINK` (Gravação via satélite/scart externo), `CH ▲`, `CH ▼`, `GUIDE` (Guia de programação), `PROG / CHECK` |
-| **Teclado Numérico & Serviço** | Dígitos `1` a `9`, `0` (códigos nativos DIGA `0x10`..`0x19`), `MEDIA SERVER` (Acesso em rede), `CANCEL` |
+* 📄 **[`docs/PANASONIC_DIGA_HACKS_GUIDE.md`](docs/PANASONIC_DIGA_HACKS_GUIDE.md)**:
+  * Physics of the 48-bit Matsushita Kaseikyo protocol ($37.010\text{ kHz}$ carrier, pulse-width modulation, XOR checksum architecture).
+  * Comprehensive table of 17 service hacks and diagnostics with SuperH SH-4 microcontroller internal operations.
+  * Self-diagnostic decoding guide for `U**` (operational), `H**` (servo/hardware), and `F**` (critical bus/EEPROM) error codes.
+  * Complete 52-command Pronto Hex cross-reference table.
+* 📄 **[`docs/PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md`](docs/PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md)**:
+  * Multi-generation compatibility matrix across DIGA lines (E, ES, EH, EX, EZ, DMR-BW/XW/BWT, and VHS/DVD Combos).
+  * Dual-deck addressing for VHS mechanisms (Device `0x90`) and DVD/HDD mechanisms (Device `0xB0`).
+* 📄 **[`docs/PANASONIC_DIGA_ANDROID_IR_PLAN.md`](docs/PANASONIC_DIGA_ANDROID_IR_PLAN.md)**:
+  * Architectural design document and hardware specifications for the Samsung SM-T805M tablet.
 
 ---
 
-## 🏗 Estrutura do Repositório
+## 🏛 Clean Architecture & Kotlin Idioms
+
+The project is structured according to strict **Clean Architecture**, **MVVM**, and **Functional Programming (FP)** principles:
 
 ```
-android-remote-panasonic/
-├── .github/workflows/build-apk.yml        # CI/CD: Compilação automática de Release APK assinado
-├── PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md # 🗺️ Pesquisa e plano multi-modelos (E, ES, EH, EX, Combos VHS)
-├── PANASONIC_DIGA_HACKS_GUIDE.md          # 🇬🇧 Complete Engineering Dossier (17 Hacks, Service Codes, Error Decodes)
-├── PANASONIC_DIGA_ANDROID_IR_PLAN.md      # Dossiê arquitetural e planejamento inicial
-├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML DMR-EH55 (52 botões físicos + 12 macros prontas)
-├── Panasonic_DIGA_ES10_ES15_TBC.irplus     # Perfil XML DMR-ES10/ES15 (Otimizado para TBC Pass-through)
-├── Panasonic_DIGA_Combo_VHS_DVD_EH75V_ES30V.irplus # Perfil XML Combos VHS/DVD (Dual Deck 0xB0/0x90 + Dubbing)
-├── Panasonic_DIGA_Universal_Modes_1_2_3.irplus     # Perfil XML Universal (Seleção e pareamento SET 1, 2 e 3)
-├── DigaIrEngine.kt                        # Núcleo avulso do motor IR em Kotlin
-├── README.md                              # Guia de instalação, compilação e uso
-├── build.gradle.kts                       # Configuração de build raiz
-├── settings.gradle.kts                    # Módulos do projeto
-├── gradle.properties
-├── gradle/wrapper/gradle-wrapper.properties
-└── app/
-    ├── build.gradle.kts                   # Configuração com Jetpack Compose & Kotlin
-    └── src/
-        ├── main/
-        │   ├── AndroidManifest.xml        # Permissão TRANSMIT_IR e hardware consumerir
-        │   ├── java/com/vhs/digacommander/
-        │   │   ├── MainActivity.kt        # Entry point do aplicativo Android
-        │   │   ├── core/ir/
-        │   │   │   ├── DigaIrEngine.kt    # ProntoHexConverter, ConsumerIrTransmitter, DigaMacroPipeline
-        │   │   │   ├── KaseikyoPulseGenerator.kt # Gerador paramétrico Kaseikyo 48-bit (SET 1/2/3, VCR 0x90)
-        │   │   │   └── PanasonicIrCodes.kt# Catálogo Pronto Hex, Commands OBC & Macros expandidas
-        │   │   └── ui/
-        │   │       ├── DigaApp.kt         # Container de navegação e máquina de estados
-        │   │       ├── RemoteTab.kt       # Aba 1: Controle remoto com seletores de Perfil, SET 1/2/3 e Card VCR
-        │   │       ├── ServiceTab.kt      # Aba 2: Diagnóstico de bancada, horímetro e slots EEPROM
-        │   │       ├── HacksTab.kt        # Aba 3: Macro multi-região, SET 1/2/3 e TVGOS bypass
-        │   │       ├── components/VfdDisplay.kt # Display virtual retro VFD
-        │   │       └── theme/             # Cores, tipografia e tema
-        │   └── res/                       # Strings, cores, estilos e temas XML
-        └── test/java/com/vhs/digacommander/
-            └── ProntoHexConverterTest.kt  # Testes de pulsos, KaseikyoPulseGenerator e integridade de macros
+app/src/main/java/com/vhs/digacommander/
+├── MainActivity.kt                     # Entry point binding ViewModel to Compose lifecycle
+├── data/
+│   ├── model/                          # Immutable domain and presentation data classes
+│   │   ├── IrSignal.kt                 # Immutable carrier frequency + pulse microsecond array
+│   │   ├── RemoteMode.kt               # Enum (MODE_1 = 0x00, MODE_2 = 0x10, MODE_3 = 0x20)
+│   │   ├── DigaDevice.kt               # Enum (DVD_HDD = 0xB0, VCR = 0x90, TV = 0x01)
+│   │   ├── DigaModelProfile.kt         # Enum (DMR_EH55, DMR_ES10_ES15, COMBO_VHS_DVD, UNIVERSAL)
+│   │   ├── MacroCommand.kt             # Immutable macro step definition
+│   │   └── MacroExecutionState.kt      # Sealed interface (Idle, Running, Completed, Error, Cancelled)
+│   ├── ir/
+│   │   ├── KaseikyoProtocol.kt         # Pure FP pulse and Pronto Hex synthesizer (referentially transparent)
+│   │   ├── ProntoHexConverter.kt       # Pure functional parser converting Pronto strings to IrSignal
+│   │   └── ConsumerIrTransmitter.kt    # Hardware abstraction over Android ConsumerIrManager
+│   └── catalog/
+│       └── PanasonicDigaCatalog.kt     # Master catalog: 52 OBC codes, Pronto strings, and bench macros
+├── domain/
+│   └── pipeline/
+│       └── DigaMacroPipeline.kt        # Serialized Mutex coroutine pipeline with anti-brick delays
+└── presentation/
+    ├── viewmodel/
+    │   └── DigaViewModel.kt            # UDF ViewModel managing immutable StateFlow<DigaUiState>
+    ├── theme/
+    │   └── DigaTheme.kt                # Fluorescent retro cyan VFD palette and typography
+    └── ui/
+        ├── DigaMainScreen.kt           # Main scaffold connecting ViewModel to tabs
+        ├── components/
+        │   └── VfdDisplay.kt           # Parametric retro fluorescent VFD panel
+        └── tabs/
+            ├── RemoteTab.kt            # Tab 1: EUR7729KG0 mirror, profile selector, mode switcher, VCR deck
+            ├── ServiceTab.kt           # Tab 2: Service bench diagnostics, laser hour meter, EEPROM slots
+            └── HacksTab.kt             # Tab 3: Automated OSD recovery, Region Free unlock, Child Lock override
 ```
 
 ---
 
-## 🔬 Validação Matemática do Protocolo Kaseikyo 48-bit
+## 🔬 Mathematical Pulse Timing (48-bit Kaseikyo)
 
-O conversor `ProntoHexConverter` transforma em tempo real strings hexadecimais no formato Philips Pronto Hex em vetores de microssegundos aceitos pelo `ConsumerIrManager.transmit()` do Android:
+The `KaseikyoProtocol` and `ProntoHexConverter` modules synthesize bit-accurate pulse arrays for Android's `ConsumerIrManager.transmit()`:
 
-* **Frequência da Portadora:** $38.029\text{ Hz}$ (`006D`) ou $37.010\text{ Hz}$ (`0070`).
-* **Lead-in (Cabeçalho):** Mark de $3.287\,\mu\text{s}$ / Space de $1.262\,\mu\text{s}$.
-* **Bit Lógico `0`:** Mark de $421\,\mu\text{s}$ / Space de $421\,\mu\text{s}$ (proporção $1:1$).
-* **Bit Lógico `1`:** Mark de $421\,\mu\text{s}$ / Space de $1.262\,\mu\text{s}$ (proporção $1:3$).
-* **Comprimento:** Exatamente 100 pulsos alternados (50 pares de rajada = 48 bits de carga útil + enquadramento).
+* **Carrier Frequency:** $37.010\text{ kHz}$ (Frequency code `0070`, divisor 112) or $38.029\text{ kHz}$ (`006D`).
+* **Lead-in Mark:** $3{,}459\,\mu\text{s}$ (128 cycles at $37\text{ kHz}$).
+* **Lead-in Space:** $1{,}729\,\mu\text{s}$ (64 cycles at $37\text{ kHz}$).
+* **Logical Bit 0:** $432\,\mu\text{s}$ Mark / $432\,\mu\text{s}$ Space ($1:1$ ratio).
+* **Logical Bit 1:** $432\,\mu\text{s}$ Mark / $1{,}297\,\mu\text{s}$ Space ($1:3$ ratio).
+* **Frame Length:** Exactly 100 alternating pulses (50 burst pairs = 48 data bits + lead-in + stop bit).
 
 ---
 
-## 🛡 Pipeline Anti-Brick e Segurança
+## 🛡 Anti-Brick State Machine & Hardware Safety
 
-O gravador Panasonic DMR-EH55 utiliza um microprocessador Renesas SuperH SH-4 com janelas estritas de interrupção:
+Panasonic DIGA recorders feature Renesas SuperH SH-4 microcontrollers with strict interrupt queue depths. The `DigaMacroPipeline` enforces hardware safety:
 
 ```
-[Idle] ──(Disparo)──> [Running (Passo 1/12)] ──(500ms)──> [Running (Passo 2/12)] ──> [Completed]
+[Idle] ──(Trigger)──> [Running (Step 1/N)] ──(Monotonic Delay)──> [Running (Step 2/N)] ──> [Completed]
   │                           │
-  └──(Toque Cancelar)─────────┴───────────────────────────> [Cancelled]
+  └──(User Abort)─────────────┴───────────────────────────────────────────────────────> [Cancelled]
 ```
 
-1. **Mutex Serializado:** Impede colisão ou disparo acidental simultâneo de comandos.
-2. **Janela Monotônica de 500 ms:** Previne estouro do buffer de interrupção do gravador.
-3. **Cancelamento Reativo:** Permite abortar qualquer macro imediatamente.
-4. **Modais de Confirmação:** O hack Multi-Região e o Hard Reset (99) exigem confirmação explícita antes do envio.
+1. **Serialized Mutex:** Prevents overlapping pulse transmissions if buttons are pressed rapidly.
+2. **Monotonic Inter-Frame Delays:** $500\text{ ms}$ minimum between service digits; $600\text{–}1200\text{ ms}$ for OSD navigation steps to allow NVRAM EEPROM commits.
+3. **Reactive Cancellation:** Operators can abort running macros instantly via the VFD progress banner.
+4. **Safety Confirmation Modals:** Destructive or invasive commands (Multi-Region Hack, Factory Reset 99, OSD Recovery) require explicit confirmation.
 
 ---
 
-## 🚀 Como Abrir e Compilar no Android Studio
+## 🚀 Building in Android Studio
 
-1. Abra o **Android Studio**.
-2. Clique em **File ➔ Open...** e aponte para:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/orgchrono/android-remote-panasonic.git
    ```
-   c:\Users\danie\Documents\android-remote-panasonic
-   ```
-3. Aguarde o **Gradle Sync** concluir.
-4. Conecte o tablet **Samsung SM-T805M** com a Depuração USB ativada (`adb devices`).
-5. Clique em **Run 'app'** (`Shift + F10`) para instalar o APK diretamente no tablet.
+2. Open **Android Studio** and select **Open**, pointing to the cloned directory.
+3. Allow Gradle to synchronize dependencies.
+4. Connect the **Samsung SM-T805M** tablet via USB with USB Debugging enabled (`adb devices`).
+5. Run the **app** configuration (`Shift + F10`) to build and deploy.
 
 ---
 
-## 🤖 CI/CD: Compilação Automática do APK (GitHub Actions)
+## 🤖 CI/CD: Automated APK Release Builds (GitHub Actions)
 
-O repositório está equipado com uma esteira de automação no GitHub Actions (`.github/workflows/build-apk.yml`):
-* A cada commit ou pull request na branch `main`, o runner do GitHub executa os testes unitários (`./gradlew test`) e compila o APK de Release (`./gradlew assembleRelease`).
-* O APK assinado é publicado como artefato de workflow (**`Panasonic-DIGA-Commander-release.apk`**) e pode ser baixado diretamente na aba **Actions** do repositório no GitHub sem necessidade de compilar no computador.
-* Quando uma tag de versão for publicada (ex: `git tag v1.0.0 && git push origin v1.0.0`), uma **GitHub Release** oficial é gerada automaticamente com o APK anexado pronto para download.
+The repository includes a complete GitHub Actions CI/CD automation workflow ([`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)):
+* Every push or pull request to `main` triggers unit tests (`./gradlew test`) and compiles the Release APK (`./gradlew assembleRelease`).
+* The compiled APK is automatically published as a workflow artifact (**`Panasonic-DIGA-Commander-release.apk`**) available for direct download under the **Actions** tab.
+* Creating and pushing a version tag (e.g., `git tag v1.0.0 && git push origin v1.0.0`) automatically generates an official **GitHub Release** with the APK asset attached.
 
+---
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0. Built for preservation, bench servicing, and digital archiving workflows.

@@ -1,146 +1,167 @@
 package com.vhs.digacommander
 
-import com.vhs.digacommander.core.ir.PanasonicIrCodes
-import com.vhs.digacommander.core.ir.ProntoHexConverter
+import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
+import com.vhs.digacommander.data.ir.KaseikyoProtocol
+import com.vhs.digacommander.data.ir.ProntoHexConverter
+import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.RemoteMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Unit test suite validating bit-accurate Kaseikyo 48-bit pulse synthesis,
+ * Pronto Hex parsing, carrier frequency computation, and macro catalog integrity.
+ */
 class ProntoHexConverterTest {
 
     @Test
     fun testProntoHexCarrierFrequencyConversion() {
-        // Código 1: freqCode = 0070 (112 decimal) -> ~37010 Hz
-        val signal1 = ProntoHexConverter.convert(PanasonicIrCodes.DIGIT_1)
+        // Frequency code 0x0070 (112 decimal) -> 4145146 / 112 = 37010 Hz
+        val signal1 = ProntoHexConverter.convert(PanasonicDigaCatalog.DIGIT_1)
         assertEquals(37010, signal1.carrierFrequency)
 
-        // Código POWER: freqCode = 0070 (112 decimal) -> ~37010 Hz
-        val signalPower = ProntoHexConverter.convert(PanasonicIrCodes.POWER)
+        // POWER code frequency validation
+        val signalPower = ProntoHexConverter.convert(PanasonicDigaCatalog.POWER)
         assertEquals(37010, signalPower.carrierFrequency)
     }
 
     @Test
     fun testPatternMicrosecondsLengthAndTiming() {
-        // DIGIT 1 possui 100 palavras de dados (50 burst-pairs)
-        val signal = ProntoHexConverter.convert(PanasonicIrCodes.DIGIT_1)
+        // Kaseikyo frame consists of 1 lead-in pair + 48 data bit pairs + 1 stop pair = 50 pairs = 100 entries
+        val signal = ProntoHexConverter.convert(PanasonicDigaCatalog.DIGIT_1)
         assertEquals(100, signal.patternMicroseconds.size)
 
-        // Primeiro pulso (Lead-in Mark): 0x0080 = 128 ciclos a 37010 Hz -> ~3459 µs
+        // Lead-in Mark: 0x0080 = 128 cycles at ~37 kHz -> ~3459 µs
         val leadInMark = signal.patternMicroseconds[0]
-        assertTrue("Lead-in mark deve ser próximo de 3459 µs, obtido: $leadInMark", leadInMark in 3300..3600)
+        assertTrue("Lead-in mark must be approximately 3459 µs, was: $leadInMark", leadInMark in 3300..3600)
 
-        // Segundo pulso (Lead-in Space): 0x0040 = 64 ciclos a 37010 Hz -> ~1729 µs
+        // Lead-in Space: 0x0040 = 64 cycles at ~37 kHz -> ~1729 µs
         val leadInSpace = signal.patternMicroseconds[1]
-        assertTrue("Lead-in space deve ser próximo de 1729 µs, obtido: $leadInSpace", leadInSpace in 1650..1800)
+        assertTrue("Lead-in space must be approximately 1729 µs, was: $leadInSpace", leadInSpace in 1650..1800)
 
-        // Bit lógico 0 (0010 0010): 16 ciclos mark / 16 ciclos space -> ~432 µs mark / 432 µs space
+        // Logical bit 0 (0010 0010): 16 cycles mark / 16 cycles space -> ~432 µs mark / 432 µs space
         val bitMark = signal.patternMicroseconds[2]
         val bitSpace = signal.patternMicroseconds[3]
-        assertTrue("Bit mark deve ser ~432 µs, obtido: $bitMark", bitMark in 410..450)
-        assertTrue("Bit space deve ser ~432 µs, obtido: $bitSpace", bitSpace in 410..450)
+        assertTrue("Bit mark must be ~432 µs, was: $bitMark", bitMark in 410..450)
+        assertTrue("Bit space must be ~432 µs, was: $bitSpace", bitSpace in 410..450)
     }
 
     @Test
     fun testStandardMirroredDigaCommandsIntegrity() {
         val standardCodes = listOf(
-            "DRIVE_SELECT" to PanasonicIrCodes.DRIVE_SELECT,
-            "DIRECT_NAVIGATOR" to PanasonicIrCodes.DIRECT_NAVIGATOR,
-            "FUNCTIONS" to PanasonicIrCodes.FUNCTIONS,
-            "TOP_MENU" to PanasonicIrCodes.TOP_MENU,
-            "OPTION_SUB_MENU" to PanasonicIrCodes.OPTION_SUB_MENU,
-            "TIME_SLIP" to PanasonicIrCodes.TIME_SLIP,
-            "MANUAL_SKIP_30S" to PanasonicIrCodes.MANUAL_SKIP_30S,
-            "MANUAL_REPLAY_10S" to PanasonicIrCodes.MANUAL_REPLAY_10S,
-            "CREATE_CHAPTER" to PanasonicIrCodes.CREATE_CHAPTER,
-            "DELETE_TITLE" to PanasonicIrCodes.DELETE_TITLE,
-            "REC" to PanasonicIrCodes.REC,
-            "REC_MODE" to PanasonicIrCodes.REC_MODE,
-            "EXT_LINK" to PanasonicIrCodes.EXT_LINK,
-            "INPUT_SELECT" to PanasonicIrCodes.INPUT_SELECT,
-            "CH_UP" to PanasonicIrCodes.CH_UP,
-            "CH_DOWN" to PanasonicIrCodes.CH_DOWN,
-            "PLAY" to PanasonicIrCodes.PLAY,
-            "STOP" to PanasonicIrCodes.STOP,
-            "PAUSE" to PanasonicIrCodes.PAUSE,
-            "FAST_FORWARD" to PanasonicIrCodes.FAST_FORWARD,
-            "REWIND" to PanasonicIrCodes.REWIND,
-            "SKIP_NEXT" to PanasonicIrCodes.SKIP_NEXT,
-            "SKIP_PREV" to PanasonicIrCodes.SKIP_PREV,
-            "AUDIO" to PanasonicIrCodes.AUDIO,
-            "SUBTITLE" to PanasonicIrCodes.SUBTITLE,
-            "STATUS" to PanasonicIrCodes.STATUS,
-            "DISPLAY" to PanasonicIrCodes.DISPLAY,
-            "GUIDE" to PanasonicIrCodes.GUIDE,
-            "PROG_CHECK" to PanasonicIrCodes.PROG_CHECK
+            "DRIVE_SELECT" to PanasonicDigaCatalog.DRIVE_SELECT,
+            "DIRECT_NAVIGATOR" to PanasonicDigaCatalog.DIRECT_NAVIGATOR,
+            "FUNCTIONS" to PanasonicDigaCatalog.FUNCTIONS,
+            "TOP_MENU" to PanasonicDigaCatalog.TOP_MENU,
+            "OPTION_SUB_MENU" to PanasonicDigaCatalog.OPTION_SUB_MENU,
+            "TIME_SLIP" to PanasonicDigaCatalog.TIME_SLIP,
+            "MANUAL_SKIP_30S" to PanasonicDigaCatalog.MANUAL_SKIP_30S,
+            "MANUAL_REPLAY_10S" to PanasonicDigaCatalog.MANUAL_REPLAY_10S,
+            "CREATE_CHAPTER" to PanasonicDigaCatalog.CREATE_CHAPTER,
+            "DELETE_TITLE" to PanasonicDigaCatalog.DELETE_TITLE,
+            "REC" to PanasonicDigaCatalog.REC,
+            "REC_MODE" to PanasonicDigaCatalog.REC_MODE,
+            "EXT_LINK" to PanasonicDigaCatalog.EXT_LINK,
+            "INPUT_SELECT" to PanasonicDigaCatalog.INPUT_SELECT,
+            "CH_UP" to PanasonicDigaCatalog.CH_UP,
+            "CH_DOWN" to PanasonicDigaCatalog.CH_DOWN,
+            "PLAY" to PanasonicDigaCatalog.PLAY,
+            "STOP" to PanasonicDigaCatalog.STOP,
+            "PAUSE" to PanasonicDigaCatalog.PAUSE,
+            "FAST_FORWARD" to PanasonicDigaCatalog.FAST_FORWARD,
+            "REWIND" to PanasonicDigaCatalog.REWIND,
+            "SKIP_NEXT" to PanasonicDigaCatalog.SKIP_NEXT,
+            "SKIP_PREV" to PanasonicDigaCatalog.SKIP_PREV,
+            "AUDIO" to PanasonicDigaCatalog.AUDIO,
+            "SUBTITLE" to PanasonicDigaCatalog.SUBTITLE,
+            "STATUS" to PanasonicDigaCatalog.STATUS,
+            "DISPLAY" to PanasonicDigaCatalog.DISPLAY,
+            "GUIDE" to PanasonicDigaCatalog.GUIDE,
+            "PROG_CHECK" to PanasonicDigaCatalog.PROG_CHECK
         )
 
         for ((name, prontoHex) in standardCodes) {
             val converted = ProntoHexConverter.convert(prontoHex)
-            assertTrue("$name: Portadora deve ser ~37kHz ou ~38kHz", converted.carrierFrequency in 36000..39000)
-            assertTrue("$name: Padrão deve possuir exatamente 100 pulsos", converted.patternMicroseconds.size == 100)
-            // Lead-in mark check (~3.2ms)
-            assertTrue("$name: Lead-in mark válido", converted.patternMicroseconds[0] in 3200..3500)
+            assertTrue("$name: Carrier must be ~37kHz or ~38kHz", converted.carrierFrequency in 36000..39000)
+            assertEquals("$name: Pattern must contain exactly 100 pulse transitions", 100, converted.patternMicroseconds.size)
+            assertTrue("$name: Valid lead-in mark", converted.patternMicroseconds[0] in 3200..3500)
         }
     }
 
     @Test
-    fun testAllPredefinedMacrosIntegrity() {
-        // Valida que todas as macros possuem passos com códigos Pronto Hex válidos
+    fun testAllCatalogMacrosIntegrity() {
         val macros = listOf(
-            PanasonicIrCodes.Macros.LASER_HOURS,
-            PanasonicIrCodes.Macros.RAM_DRIVE_LAST_ERROR,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_LATEST,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_1,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_2,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_3,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_4,
-            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_5,
-            PanasonicIrCodes.Macros.REGION_READOUT,
-            PanasonicIrCodes.Macros.HDD_SURFACE_TEST,
-            PanasonicIrCodes.Macros.VFD_SEGMENTS_TEST,
-            PanasonicIrCodes.Macros.VIDEO_IO_TEST_80,
-            PanasonicIrCodes.Macros.VIDEO_IO_TEST_81,
-            PanasonicIrCodes.Macros.TRAY_CYCLE_TEST,
-            PanasonicIrCodes.Macros.CLEAR_ERROR_F00,
-            PanasonicIrCodes.Macros.MULTI_REGION_HACK,
-            PanasonicIrCodes.Macros.VERIFY_REGION_FREE,
-            PanasonicIrCodes.Macros.CHILD_LOCK_UNLOCK,
-            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_1,
-            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_2,
-            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_3,
-            PanasonicIrCodes.Macros.FACTORY_RESET,
-            PanasonicIrCodes.Macros.TVGOS_DISABLE_ZIP
+            PanasonicDigaCatalog.Macros.LASER_HOURS,
+            PanasonicDigaCatalog.Macros.RAM_DRIVE_LAST_ERROR,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_LATEST,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_1,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_2,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_3,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_4,
+            PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_5,
+            PanasonicDigaCatalog.Macros.REGION_READOUT,
+            PanasonicDigaCatalog.Macros.HDD_SURFACE_TEST,
+            PanasonicDigaCatalog.Macros.VFD_SEGMENTS_TEST,
+            PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_80,
+            PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_81,
+            PanasonicDigaCatalog.Macros.TRAY_CYCLE_TEST,
+            PanasonicDigaCatalog.Macros.CLEAR_ERROR_F00,
+            PanasonicDigaCatalog.Macros.MULTI_REGION_HACK,
+            PanasonicDigaCatalog.Macros.VERIFY_REGION_FREE,
+            PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK,
+            PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1,
+            PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1,
+            PanasonicDigaCatalog.Macros.FACTORY_RESET,
+            PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP
         )
 
         for (macro in macros) {
-            assertTrue("Macro não pode ser vazia", macro.isNotEmpty())
+            assertTrue("Macro list must not be empty", macro.isNotEmpty())
             for (step in macro) {
                 val converted = ProntoHexConverter.convert(step.prontoHex)
-                assertTrue("Portadora deve ser 37kHz ou 38kHz", converted.carrierFrequency in 36000..39000)
-                assertTrue("Padrão de pulsos deve possuir pelo menos 50 pulsos", converted.patternMicroseconds.size >= 50)
-                assertTrue("Atraso deve ser positivo", step.postDelayMs > 0)
+                assertTrue("Carrier must be 37kHz or 38kHz", converted.carrierFrequency in 36000..39000)
+                assertEquals("Pulse pattern must have 100 transitions", 100, converted.patternMicroseconds.size)
+                assertTrue("Inter-frame delay must be positive", step.postDelayMs > 0)
             }
         }
     }
 
     @Test
-    fun testKaseikyoPulseGeneratorParametricCreation() {
-        // Valida que o gerador paramétrico produz 100 pulsos exatos
-        val pulsesDvdMode1 = com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.generatePulsePattern(
-            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.DEVICE_DVD_HDD,
-            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.SUBDEVICE_MODE_1,
-            PanasonicIrCodes.Commands.POWER
+    fun testAutomatedOsdRecoveryMacrosSet2AndSet3() {
+        val macroSet2 = PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1
+        assertEquals(10, macroSet2.size)
+        // Verify all steps in Mode 2 have correct Kaseikyo subdevice framing
+        for (step in macroSet2) {
+            val signal = ProntoHexConverter.convert(step.prontoHex)
+            assertEquals(100, signal.patternMicroseconds.size)
+        }
+
+        val macroSet3 = PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1
+        assertEquals(11, macroSet3.size)
+        for (step in macroSet3) {
+            val signal = ProntoHexConverter.convert(step.prontoHex)
+            assertEquals(100, signal.patternMicroseconds.size)
+        }
+    }
+
+    @Test
+    fun testKaseikyoProtocolParametricCreation() {
+        val pulsesDvdMode1 = KaseikyoProtocol.synthesizePulsePattern(
+            DigaDevice.DVD_HDD.id,
+            RemoteMode.MODE_1,
+            PanasonicDigaCatalog.OBC.POWER
         )
         assertEquals(100, pulsesDvdMode1.size)
         assertEquals(3459, pulsesDvdMode1[0]) // Lead-in mark
         assertEquals(1729, pulsesDvdMode1[1]) // Lead-in space
         assertEquals(432, pulsesDvdMode1[2])  // Bit mark
 
-        // Valida que o Pronto Hex gerado dinamicamente é aceito pelo ProntoHexConverter
-        val prontoHex = com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.generateProntoHex(
-            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.DEVICE_DVD_HDD,
-            com.vhs.digacommander.core.ir.KaseikyoPulseGenerator.SUBDEVICE_MODE_1,
-            PanasonicIrCodes.Commands.POWER
+        // Validate that synthesized Pronto Hex parses bit-accurately
+        val prontoHex = KaseikyoProtocol.synthesizeProntoHex(
+            DigaDevice.DVD_HDD.id,
+            RemoteMode.MODE_1,
+            PanasonicDigaCatalog.OBC.POWER
         )
         val converted = ProntoHexConverter.convert(prontoHex)
         assertEquals(37010, converted.carrierFrequency)
@@ -149,16 +170,20 @@ class ProntoHexConverterTest {
 
     @Test
     fun testRemoteModesAndVcrAddressing() {
-        // Testa geração para Mode 1, Mode 2 e Mode 3 (SET 1, SET 2, SET 3)
-        for (mode in 1..3) {
-            val code = PanasonicIrCodes.getCode(PanasonicIrCodes.Commands.PLAY, mode = mode)
+        // Test modes 1, 2, and 3
+        for (mode in RemoteMode.entries) {
+            val code = PanasonicDigaCatalog.getProntoHex(PanasonicDigaCatalog.OBC.PLAY, mode = mode)
             val signal = ProntoHexConverter.convert(code)
             assertEquals(37010, signal.carrierFrequency)
             assertEquals(100, signal.patternMicroseconds.size)
         }
 
-        // Testa geração para VCR Deck (Device 0x90)
-        val vcrPlayCode = PanasonicIrCodes.getCode(PanasonicIrCodes.Commands.PLAY, mode = 1, isVcr = true)
+        // Test VCR Deck addressing (Device 0x90)
+        val vcrPlayCode = PanasonicDigaCatalog.getProntoHex(
+            PanasonicDigaCatalog.OBC.PLAY,
+            mode = RemoteMode.MODE_1,
+            device = DigaDevice.VCR
+        )
         val vcrSignal = ProntoHexConverter.convert(vcrPlayCode)
         assertEquals(37010, vcrSignal.carrierFrequency)
         assertEquals(100, vcrSignal.patternMicroseconds.size)

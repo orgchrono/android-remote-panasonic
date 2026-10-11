@@ -2,10 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissão necessária para transmitir sinais infravermelhos -->
+    <!-- Required permission to transmit infrared signals -->
     <uses-permission android:name="android.permission.TRANSMIT_IR" />
 
-    <!-- Recurso de hardware do emissor infravermelho (SM-T805M / Samsung Tab S) -->
+    <!-- Hardware feature for Consumer IR transmitter (Samsung Tab S / SM-T805M) -->
     <uses-feature
         android:name="android.hardware.consumerir"
         android:required="false" />

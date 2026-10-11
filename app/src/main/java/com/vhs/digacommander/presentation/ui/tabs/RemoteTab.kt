@@ -1,4 +1,4 @@
-package com.vhs.digacommander.ui
+package com.vhs.digacommander.presentation.ui.tabs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,31 +7,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vhs.digacommander.core.ir.PanasonicIrCodes
-import com.vhs.digacommander.ui.theme.*
+import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
+import com.vhs.digacommander.data.model.DigaModelProfile
+import com.vhs.digacommander.data.model.RemoteMode
+import com.vhs.digacommander.presentation.theme.*
 
+/**
+ * Main Remote Control tab mirroring the physical Panasonic EUR7729KG0 controller.
+ */
 @Composable
 fun RemoteTab(
-    onSendCommand: (label: String, prontoHex: String) -> Unit,
+    activeProfile: DigaModelProfile,
+    activeMode: RemoteMode,
+    onProfileSelected: (DigaModelProfile) -> Unit,
+    onModeSelected: (RemoteMode) -> Unit,
+    onSendCommand: (label: String, command: Int, isVcr: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var activeMode by remember { mutableIntStateOf(1) } // 1 (SET 1), 2 (SET 2), 3 (SET 3)
-    var activeProfile by remember { mutableStateOf("DMR-EH55") }
-
-    fun send(label: String, cmd: Int, isVcr: Boolean = false) {
-        val code = PanasonicIrCodes.getCode(cmd, activeMode, isVcr)
-        val modeSuffix = if (activeMode != 1) " [SET $activeMode]" else ""
-        val vcrSuffix = if (isVcr) " (VCR)" else ""
-        onSendCommand("$label$vcrSuffix$modeSuffix", code)
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -40,7 +38,7 @@ fun RemoteTab(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // --- SEÇÃO 0: PERFIL DE GRAVADOR & CANAL IR (SET 1 / 2 / 3) ---
+        // --- SECTION 0: RECORDER PROFILE & IR CHANNEL MODE SELECTOR ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
@@ -52,34 +50,33 @@ fun RemoteTab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "PERFIL DE GRAVADOR DIGA",
+                        text = "RECORDER PROFILE & IR CHANNEL",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )
                     Text(
-                        text = "CANAL ATIVO: SET $activeMode",
+                        text = "ACTIVE: ${activeMode.label}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp,
                         color = when (activeMode) {
-                            1 -> DigaBlueLight
-                            2 -> DigaGreen
-                            else -> DigaAmber
+                            RemoteMode.MODE_1 -> DigaBlueLight
+                            RemoteMode.MODE_2 -> DigaGreen
+                            RemoteMode.MODE_3 -> DigaAmber
                         }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Linha de Perfis
+                // Profile Selector Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val profiles = listOf("DMR-EH55", "ES10/ES15", "COMBO VHS", "UNIVERSAL")
-                    profiles.forEach { profile ->
+                    DigaModelProfile.entries.forEach { profile ->
                         val isSelected = activeProfile == profile
                         Button(
-                            onClick = { activeProfile = profile },
+                            onClick = { onProfileSelected(profile) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(34.dp),
@@ -91,7 +88,7 @@ fun RemoteTab(
                             contentPadding = PaddingValues(horizontal = 2.dp)
                         ) {
                             Text(
-                                profile,
+                                profile.id,
                                 fontSize = 9.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -101,20 +98,20 @@ fun RemoteTab(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Linha de Canais (SET 1, SET 2, SET 3)
+                // Channel Selector Row (SET 1, SET 2, SET 3)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf(
-                        1 to ("SET 1 (Padrão)" to DigaBlue),
-                        2 to ("SET 2" to DigaGreen),
-                        3 to ("SET 3" to DigaAmber)
-                    ).forEach { (modeNum, labelAndColor) ->
-                        val (label, accentColor) = labelAndColor
-                        val isSelected = activeMode == modeNum
+                    RemoteMode.entries.forEach { mode ->
+                        val isSelected = activeMode == mode
+                        val accentColor = when (mode) {
+                            RemoteMode.MODE_1 -> DigaBlue
+                            RemoteMode.MODE_2 -> DigaGreen
+                            RemoteMode.MODE_3 -> DigaAmber
+                        }
                         Button(
-                            onClick = { activeMode = modeNum },
+                            onClick = { onModeSelected(mode) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(32.dp),
@@ -126,7 +123,7 @@ fun RemoteTab(
                             contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             Text(
-                                label,
+                                mode.label,
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -136,14 +133,14 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 1: SISTEMA & SELEÇÃO DE UNIDADE (DRIVE) ---
+        // --- SECTION 1: SYSTEM & DRIVE SELECTION ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "SISTEMA & SELEÇÃO DE DRIVE",
+                    text = "SYSTEM & DRIVE SELECTION",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
@@ -154,7 +151,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("POWER", PanasonicIrCodes.Commands.POWER) },
+                        onClick = { onSendCommand("POWER", PanasonicDigaCatalog.OBC.POWER, false) },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaRed),
                         shape = RoundedCornerShape(8.dp)
@@ -163,7 +160,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("EJECT", PanasonicIrCodes.Commands.EJECT) },
+                        onClick = { onSendCommand("EJECT", PanasonicDigaCatalog.OBC.EJECT, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -172,7 +169,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("STATUS", PanasonicIrCodes.Commands.STATUS) },
+                        onClick = { onSendCommand("STATUS", PanasonicDigaCatalog.OBC.STATUS, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -181,7 +178,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("DISPLAY", PanasonicIrCodes.Commands.DISPLAY) },
+                        onClick = { onSendCommand("DISPLAY", PanasonicDigaCatalog.OBC.DISPLAY, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -197,7 +194,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { send("DRIVE SELECT (HDD/DVD/SD)", PanasonicIrCodes.Commands.DRIVE_SELECT) },
+                        onClick = { onSendCommand("DRIVE SELECT (HDD/DVD/SD)", PanasonicDigaCatalog.OBC.DRIVE_SELECT, false) },
                         modifier = Modifier.weight(1.5f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaBlue),
                         shape = RoundedCornerShape(8.dp)
@@ -206,7 +203,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("INPUT SELECT", PanasonicIrCodes.Commands.INPUT_SELECT) },
+                        onClick = { onSendCommand("INPUT SELECT", PanasonicDigaCatalog.OBC.INPUT_SELECT, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -217,7 +214,7 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 2: NAVEGAÇÃO & MENUS (D-PAD) ---
+        // --- SECTION 2: NAVIGATION & MENUS (D-PAD) ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
@@ -227,7 +224,7 @@ fun RemoteTab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "NAVEGAÇÃO & MENUS",
+                    text = "NAVIGATION & MENUS",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.Start)
@@ -240,7 +237,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("DIRECT NAVIGATOR", PanasonicIrCodes.Commands.DIRECT_NAVIGATOR) },
+                        onClick = { onSendCommand("DIRECT NAVIGATOR", PanasonicDigaCatalog.OBC.DIRECT_NAVIGATOR, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaBlueLight),
                         shape = RoundedCornerShape(6.dp)
@@ -249,7 +246,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("FUNCTIONS", PanasonicIrCodes.Commands.FUNCTIONS) },
+                        onClick = { onSendCommand("FUNCTIONS", PanasonicDigaCatalog.OBC.FUNCTIONS, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -258,7 +255,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("TOP MENU", PanasonicIrCodes.Commands.TOP_MENU) },
+                        onClick = { onSendCommand("TOP MENU", PanasonicDigaCatalog.OBC.TOP_MENU, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -267,7 +264,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("OPTION", PanasonicIrCodes.Commands.OPTION_SUB_MENU) },
+                        onClick = { onSendCommand("OPTION", PanasonicDigaCatalog.OBC.OPTION_SUB_MENU, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -278,9 +275,9 @@ fun RemoteTab(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // D-PAD Cross
+                // D-Pad Directional Controls
                 Button(
-                    onClick = { send("UP ▲", PanasonicIrCodes.Commands.UP) },
+                    onClick = { onSendCommand("UP ▲", PanasonicDigaCatalog.OBC.UP, false) },
                     modifier = Modifier.size(width = 90.dp, height = 48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                     shape = RoundedCornerShape(8.dp)
@@ -293,7 +290,7 @@ fun RemoteTab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { send("LEFT ◀", PanasonicIrCodes.Commands.LEFT) },
+                        onClick = { onSendCommand("LEFT ◀", PanasonicDigaCatalog.OBC.LEFT, false) },
                         modifier = Modifier.size(width = 72.dp, height = 56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -302,7 +299,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("OK / ENTER", PanasonicIrCodes.Commands.ENTER_OK) },
+                        onClick = { onSendCommand("OK / ENTER", PanasonicDigaCatalog.OBC.ENTER_OK, false) },
                         modifier = Modifier.size(72.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaBlue),
                         shape = CircleShape
@@ -311,7 +308,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("RIGHT ▶", PanasonicIrCodes.Commands.RIGHT) },
+                        onClick = { onSendCommand("RIGHT ▶", PanasonicDigaCatalog.OBC.RIGHT, false) },
                         modifier = Modifier.size(width = 72.dp, height = 56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(8.dp)
@@ -321,7 +318,7 @@ fun RemoteTab(
                 }
 
                 Button(
-                    onClick = { send("DOWN ▼", PanasonicIrCodes.Commands.DOWN) },
+                    onClick = { onSendCommand("DOWN ▼", PanasonicDigaCatalog.OBC.DOWN, false) },
                     modifier = Modifier.size(width = 90.dp, height = 48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                     shape = RoundedCornerShape(8.dp)
@@ -336,7 +333,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("RETURN", PanasonicIrCodes.Commands.RETURN) },
+                        onClick = { onSendCommand("RETURN", PanasonicDigaCatalog.OBC.RETURN, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -345,7 +342,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("EXIT", PanasonicIrCodes.Commands.EXIT) },
+                        onClick = { onSendCommand("EXIT", PanasonicDigaCatalog.OBC.EXIT, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -354,7 +351,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("GUIDE", PanasonicIrCodes.Commands.GUIDE) },
+                        onClick = { onSendCommand("GUIDE", PanasonicDigaCatalog.OBC.GUIDE, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -363,7 +360,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("PROG / CHECK", PanasonicIrCodes.Commands.PROG_CHECK) },
+                        onClick = { onSendCommand("PROG / CHECK", PanasonicDigaCatalog.OBC.PROG_CHECK, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -374,26 +371,25 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 3: TRANSPORTE & DECK ---
+        // --- SECTION 3: TRANSPORT DECK ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "TRANSPORTE & DECK",
+                    text = "TRANSPORT DECK",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Play / Pause / Stop
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { send("PLAY ▶", PanasonicIrCodes.Commands.PLAY) },
+                        onClick = { onSendCommand("PLAY ▶", PanasonicDigaCatalog.OBC.PLAY, false) },
                         modifier = Modifier.weight(1.2f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaGreen),
                         shape = RoundedCornerShape(8.dp)
@@ -402,7 +398,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("PAUSE ❚❚", PanasonicIrCodes.Commands.PAUSE) },
+                        onClick = { onSendCommand("PAUSE ❚❚", PanasonicDigaCatalog.OBC.PAUSE, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
                         shape = RoundedCornerShape(8.dp)
@@ -411,7 +407,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("STOP ■", PanasonicIrCodes.Commands.STOP) },
+                        onClick = { onSendCommand("STOP ■", PanasonicDigaCatalog.OBC.STOP, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaRedDark),
                         shape = RoundedCornerShape(8.dp)
@@ -422,13 +418,12 @@ fun RemoteTab(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Rewind / Fast Forward / Skip Prev / Skip Next
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("SKIP PREV |◀", PanasonicIrCodes.Commands.SKIP_PREV) },
+                        onClick = { onSendCommand("SKIP PREV |◀", PanasonicDigaCatalog.OBC.SKIP_PREV, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -437,7 +432,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("REWIND ◀◀", PanasonicIrCodes.Commands.REWIND) },
+                        onClick = { onSendCommand("REWIND ◀◀", PanasonicDigaCatalog.OBC.REWIND, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -446,7 +441,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("FAST FORWARD ▶▶", PanasonicIrCodes.Commands.FAST_FORWARD) },
+                        onClick = { onSendCommand("FAST FORWARD ▶▶", PanasonicDigaCatalog.OBC.FAST_FORWARD, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -455,7 +450,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("SKIP NEXT ▶|", PanasonicIrCodes.Commands.SKIP_NEXT) },
+                        onClick = { onSendCommand("SKIP NEXT ▶|", PanasonicDigaCatalog.OBC.SKIP_NEXT, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -466,8 +461,8 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO EXTRA: DECK VCR (COMBO VHS / S-VHS - DEVICE 0x90) ---
-        if (activeProfile == "COMBO VHS") {
+        // --- SECTION EXTRA: VCR DECK (COMBO VHS / S-VHS - DEVICE 0x90) ---
+        if (activeProfile == DigaModelProfile.COMBO_VHS_DVD || activeProfile == DigaModelProfile.UNIVERSAL) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DigaSurface)
@@ -479,31 +474,30 @@ fun RemoteTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "📼 DECK VCR (COMBO VHS / S-VHS - DEVICE 0x90)",
+                            text = "📼 VCR DECK (COMBO VHS / S-VHS - DEVICE 0x90)",
                             style = MaterialTheme.typography.labelSmall,
                             color = DigaAmber,
                             fontWeight = FontWeight.Bold
                         )
-                        Text("CANAL SET $activeMode", fontSize = 10.sp, color = Color.Gray)
+                        Text(activeMode.label, fontSize = 10.sp, color = Color.Gray)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 1: Seleção de Drive VHS & Eject VHS
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Button(
-                            onClick = { send("DRIVE SELECT (VHS)", PanasonicIrCodes.Commands.DRIVE_SELECT, isVcr = true) },
+                            onClick = { onSendCommand("DRIVE SELECT (VHS)", PanasonicDigaCatalog.OBC.DRIVE_SELECT, true) },
                             modifier = Modifier.weight(1.5f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("DRIVE SELECT: VHS 📼", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Black)
+                            Text("DRIVE: VHS 📼", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Black)
                         }
 
                         Button(
-                            onClick = { send("VHS EJECT ⏏", PanasonicIrCodes.Commands.EJECT, isVcr = true) },
+                            onClick = { onSendCommand("VHS EJECT ⏏", PanasonicDigaCatalog.OBC.EJECT, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                             shape = RoundedCornerShape(8.dp)
@@ -514,13 +508,12 @@ fun RemoteTab(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 2: Transporte VHS (Play / Pause / Stop)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Button(
-                            onClick = { send("VHS PLAY ▶", PanasonicIrCodes.Commands.PLAY, isVcr = true) },
+                            onClick = { onSendCommand("VHS PLAY ▶", PanasonicDigaCatalog.OBC.PLAY, true) },
                             modifier = Modifier.weight(1.2f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaGreen),
                             shape = RoundedCornerShape(8.dp)
@@ -529,7 +522,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("VHS PAUSE ❚❚", PanasonicIrCodes.Commands.PAUSE, isVcr = true) },
+                            onClick = { onSendCommand("VHS PAUSE ❚❚", PanasonicDigaCatalog.OBC.PAUSE, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
                             shape = RoundedCornerShape(8.dp)
@@ -538,7 +531,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("VHS STOP ■", PanasonicIrCodes.Commands.STOP, isVcr = true) },
+                            onClick = { onSendCommand("VHS STOP ■", PanasonicDigaCatalog.OBC.STOP, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaRedDark),
                             shape = RoundedCornerShape(8.dp)
@@ -549,13 +542,12 @@ fun RemoteTab(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 3: Retroceder / Avançar / Gravar VHS
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Button(
-                            onClick = { send("VHS REWIND ◀◀", PanasonicIrCodes.Commands.REWIND, isVcr = true) },
+                            onClick = { onSendCommand("VHS REWIND ◀◀", PanasonicDigaCatalog.OBC.REWIND, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                             shape = RoundedCornerShape(6.dp)
@@ -564,7 +556,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("VHS FF ▶▶", PanasonicIrCodes.Commands.FAST_FORWARD, isVcr = true) },
+                            onClick = { onSendCommand("VHS FF ▶▶", PanasonicDigaCatalog.OBC.FAST_FORWARD, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                             shape = RoundedCornerShape(6.dp)
@@ -573,7 +565,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("VHS REC ●", PanasonicIrCodes.Commands.REC, isVcr = true) },
+                            onClick = { onSendCommand("VHS REC ●", PanasonicDigaCatalog.OBC.REC, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaRed),
                             shape = RoundedCornerShape(6.dp)
@@ -584,13 +576,12 @@ fun RemoteTab(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 4: Tracking Analógico
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Button(
-                            onClick = { send("TRACKING ▲", PanasonicIrCodes.Commands.VCR_TRACKING_PLUS, isVcr = true) },
+                            onClick = { onSendCommand("TRACKING ▲", PanasonicDigaCatalog.OBC.VCR_TRACKING_PLUS, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaBlue),
                             shape = RoundedCornerShape(6.dp)
@@ -599,7 +590,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("TRACKING ▼", PanasonicIrCodes.Commands.VCR_TRACKING_MINUS, isVcr = true) },
+                            onClick = { onSendCommand("TRACKING ▼", PanasonicDigaCatalog.OBC.VCR_TRACKING_MINUS, true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = DigaBlue),
                             shape = RoundedCornerShape(6.dp)
@@ -610,13 +601,12 @@ fun RemoteTab(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 5: Cópia Direta 1-Toque (Dubbing)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Button(
-                            onClick = { send("DUBBING: VHS ➔ DVD", PanasonicIrCodes.Commands.VCR_DUB_VHS_TO_DVD) },
+                            onClick = { onSendCommand("DUBBING: VHS ➔ DVD", PanasonicDigaCatalog.OBC.VCR_DUB_VHS_TO_DVD, false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
                             shape = RoundedCornerShape(6.dp)
@@ -625,7 +615,7 @@ fun RemoteTab(
                         }
 
                         Button(
-                            onClick = { send("DUBBING: DVD ➔ VHS", PanasonicIrCodes.Commands.VCR_DUB_DVD_TO_VHS) },
+                            onClick = { onSendCommand("DUBBING: DVD ➔ VHS", PanasonicDigaCatalog.OBC.VCR_DUB_DVD_TO_VHS, false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
                             shape = RoundedCornerShape(6.dp)
@@ -637,14 +627,14 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 4: RECURSOS EXCLUSIVOS DIGA & EDIÇÃO ---
+        // --- SECTION 4: DIGA EDITING & ADVANCED PLAYBACK ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "RECURSOS DIGA & EDIÇÃO",
+                    text = "DIGA EDITING & ADVANCED FEATURES",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
@@ -655,7 +645,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("TIME SLIP ⌛", PanasonicIrCodes.Commands.TIME_SLIP) },
+                        onClick = { onSendCommand("TIME SLIP ⌛", PanasonicDigaCatalog.OBC.TIME_SLIP, false) },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
                         shape = RoundedCornerShape(6.dp)
@@ -664,7 +654,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("MANUAL REPLAY (-10s)", PanasonicIrCodes.Commands.MANUAL_REPLAY_10S) },
+                        onClick = { onSendCommand("MANUAL REPLAY (-10s)", PanasonicDigaCatalog.OBC.MANUAL_REPLAY_10S, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -673,7 +663,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("MANUAL SKIP (+30s)", PanasonicIrCodes.Commands.MANUAL_SKIP_30S) },
+                        onClick = { onSendCommand("MANUAL SKIP (+30s)", PanasonicDigaCatalog.OBC.MANUAL_SKIP_30S, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -689,7 +679,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("CREATE CHAPTER", PanasonicIrCodes.Commands.CREATE_CHAPTER) },
+                        onClick = { onSendCommand("CREATE CHAPTER", PanasonicDigaCatalog.OBC.CREATE_CHAPTER, false) },
                         modifier = Modifier.weight(1.1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -698,7 +688,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("DELETE TITLE", PanasonicIrCodes.Commands.DELETE_TITLE) },
+                        onClick = { onSendCommand("DELETE TITLE", PanasonicDigaCatalog.OBC.DELETE_TITLE, false) },
                         modifier = Modifier.weight(1.1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaRedDark),
                         shape = RoundedCornerShape(6.dp)
@@ -707,7 +697,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("AUDIO", PanasonicIrCodes.Commands.AUDIO) },
+                        onClick = { onSendCommand("AUDIO", PanasonicDigaCatalog.OBC.AUDIO, false) },
                         modifier = Modifier.weight(0.9f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -716,7 +706,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("SUBTITLE", PanasonicIrCodes.Commands.SUBTITLE) },
+                        onClick = { onSendCommand("SUBTITLE", PanasonicDigaCatalog.OBC.SUBTITLE, false) },
                         modifier = Modifier.weight(0.9f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -727,14 +717,14 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 5: GRAVAÇÃO & SINTONIZADOR ---
+        // --- SECTION 5: RECORDING & BROADCAST ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "GRAVAÇÃO & SINTONIZADOR",
+                    text = "RECORDING & BROADCAST",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
@@ -745,7 +735,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { send("REC ●", PanasonicIrCodes.Commands.REC) },
+                        onClick = { onSendCommand("REC ●", PanasonicDigaCatalog.OBC.REC, false) },
                         modifier = Modifier.weight(1.2f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaRed),
                         shape = RoundedCornerShape(6.dp)
@@ -754,7 +744,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("REC MODE (XP/SP/LP/EP)", PanasonicIrCodes.Commands.REC_MODE) },
+                        onClick = { onSendCommand("REC MODE (XP/SP/LP/EP)", PanasonicDigaCatalog.OBC.REC_MODE, false) },
                         modifier = Modifier.weight(1.5f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -763,7 +753,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("EXT LINK", PanasonicIrCodes.Commands.EXT_LINK) },
+                        onClick = { onSendCommand("EXT LINK", PanasonicDigaCatalog.OBC.EXT_LINK, false) },
                         modifier = Modifier.weight(1.1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -779,7 +769,7 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { send("CH UP ▲", PanasonicIrCodes.Commands.CH_UP) },
+                        onClick = { onSendCommand("CH UP ▲", PanasonicDigaCatalog.OBC.CH_UP, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -788,7 +778,7 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("CH DOWN ▼", PanasonicIrCodes.Commands.CH_DOWN) },
+                        onClick = { onSendCommand("CH DOWN ▼", PanasonicDigaCatalog.OBC.CH_DOWN, false) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
@@ -799,7 +789,7 @@ fun RemoteTab(
             }
         }
 
-        // --- SEÇÃO 6: TECLADO NUMÉRICO ---
+        // --- SECTION 6: NUMERIC KEYPAD ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
@@ -809,7 +799,7 @@ fun RemoteTab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "TECLADO NUMÉRICO",
+                    text = "NUMERIC KEYPAD",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.Start)
@@ -818,9 +808,9 @@ fun RemoteTab(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val digits = listOf(
-                    listOf("1" to PanasonicIrCodes.Commands.DIGIT_1, "2" to PanasonicIrCodes.Commands.DIGIT_2, "3" to PanasonicIrCodes.Commands.DIGIT_3),
-                    listOf("4" to PanasonicIrCodes.Commands.DIGIT_4, "5" to PanasonicIrCodes.Commands.DIGIT_5, "6" to PanasonicIrCodes.Commands.DIGIT_6),
-                    listOf("7" to PanasonicIrCodes.Commands.DIGIT_7, "8" to PanasonicIrCodes.Commands.DIGIT_8, "9" to PanasonicIrCodes.Commands.DIGIT_9)
+                    listOf("1" to PanasonicDigaCatalog.OBC.DIGIT_1, "2" to PanasonicDigaCatalog.OBC.DIGIT_2, "3" to PanasonicDigaCatalog.OBC.DIGIT_3),
+                    listOf("4" to PanasonicDigaCatalog.OBC.DIGIT_4, "5" to PanasonicDigaCatalog.OBC.DIGIT_5, "6" to PanasonicDigaCatalog.OBC.DIGIT_6),
+                    listOf("7" to PanasonicDigaCatalog.OBC.DIGIT_7, "8" to PanasonicDigaCatalog.OBC.DIGIT_8, "9" to PanasonicDigaCatalog.OBC.DIGIT_9)
                 )
 
                 for (row in digits) {
@@ -830,8 +820,10 @@ fun RemoteTab(
                     ) {
                         for ((label, cmd) in row) {
                             Button(
-                                onClick = { send(label, cmd) },
-                                modifier = Modifier.weight(1f).height(46.dp),
+                                onClick = { onSendCommand(label, cmd, false) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                                 shape = RoundedCornerShape(6.dp)
                             ) {
@@ -847,8 +839,10 @@ fun RemoteTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { send("MEDIA SERVER", PanasonicIrCodes.Commands.MEDIA_SERVER) },
-                        modifier = Modifier.weight(1f).height(46.dp),
+                        onClick = { onSendCommand("MEDIA SERVER", PanasonicDigaCatalog.OBC.MEDIA_SERVER, false) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -856,8 +850,10 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("0", PanasonicIrCodes.Commands.DIGIT_0) },
-                        modifier = Modifier.weight(1f).height(46.dp),
+                        onClick = { onSendCommand("0", PanasonicDigaCatalog.OBC.DIGIT_0, false) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -865,8 +861,10 @@ fun RemoteTab(
                     }
 
                     Button(
-                        onClick = { send("CANCEL", PanasonicIrCodes.Commands.CANCEL) },
-                        modifier = Modifier.weight(1f).height(46.dp),
+                        onClick = { onSendCommand("CANCEL", PanasonicDigaCatalog.OBC.CANCEL, false) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
                     ) {

@@ -1,4 +1,4 @@
-package com.vhs.digacommander.ui
+package com.vhs.digacommander.presentation.ui.tabs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -6,20 +6,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vhs.digacommander.core.ir.DigaMacroPipeline
-import com.vhs.digacommander.core.ir.PanasonicIrCodes
-import com.vhs.digacommander.ui.theme.*
+import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
+import com.vhs.digacommander.data.model.MacroCommand
+import com.vhs.digacommander.presentation.theme.*
 
+/**
+ * Service & Bench Diagnostics tab for Panasonic DIGA recorders.
+ * Provides optical pickup hour meter reading, EEPROM error logs,
+ * HDD surface tests, and mechanical calibration routines.
+ */
 @Composable
 fun ServiceTab(
-    onRunMacro: (title: String, commands: List<DigaMacroPipeline.MacroCommand>) -> Unit,
-    onSendCommand: (label: String, prontoHex: String) -> Unit,
+    onRunMacro: (commands: List<MacroCommand>) -> Unit,
+    onSendCommand: (label: String, command: Int, isVcr: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -29,25 +33,25 @@ fun ServiceTab(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- INSTRUÇÕES DE ENTRADA EM SERVICE MODE ---
+        // --- SERVICE MODE ENTRY GUIDE CARD ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DigaSurface)
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = "⚙ PROCEDIMENTO DE ENTRADA EM SERVICE MODE",
+                    text = "⚙ SERVICE MODE BENCH ENTRY PROCEDURE",
                     color = DigaBlueLight,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "1. Com o aparelho ligado e gaveta vazia, certifique-se de estar em STOP.\n" +
-                           "2. No painel frontal do gravador, segure [STOP] + [PLAY] por 5 segundos.\n" +
-                           "   (Em alguns modelos: [STOP] + [CH UP] em Standby por 5 segundos).\n" +
-                           "3. O display VFD exibirá 'SERVICE' ou entrará em modo de escuta.\n" +
-                           "4. Dispare as macros abaixo para inspecionar os parâmetros no display.",
+                    text = "1. Turn ON the DIGA recorder, remove any disc, and verify STOP status.\n" +
+                           "2. On the physical front panel, hold [STOP] + [PLAY] simultaneously for 5 seconds.\n" +
+                           "   (Alternative for select models: hold [STOP] + [CH UP] in Standby mode).\n" +
+                           "3. The VFD fluorescent display will indicate 'SERVICE' mode.\n" +
+                           "4. Trigger diagnostic macros below to read parameters directly on the display.",
                     color = Color.LightGray,
                     fontSize = 12.sp,
                     lineHeight = 17.sp
@@ -55,9 +59,9 @@ fun ServiceTab(
             }
         }
 
-        // --- SEÇÃO 1: SAÚDE ÓPTICA & HORÍMETRO ---
+        // --- SECTION 1: OPTICAL PICKUP & LASER HOUR COUNTER ---
         Text(
-            text = "🩺 SAÚDE ÓPTICA & HORÍMETRO",
+            text = "🩺 OPTICAL HEALTH & LASER HOUR COUNTER",
             style = MaterialTheme.typography.labelSmall,
             color = DigaBlueLight,
             fontWeight = FontWeight.Bold
@@ -68,33 +72,33 @@ fun ServiceTab(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ServiceActionCard(
-                title = "HORAS LASER (41)",
-                description = "Tempo total acumulado de emissão do diodo óptico (ex: L0185 = 185h).",
-                buttonText = "Executar [4][1]",
+                title = "LASER HOURS (41)",
+                description = "Total cumulative laser diode emission time (e.g., L0185 = 185 hours).",
+                buttonText = "Execute [4][1]",
                 containerColor = DigaSurface,
                 accentColor = DigaBlue,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Horímetro Laser (41)", PanasonicIrCodes.Macros.LASER_HOURS)
+                    onRunMacro(PanasonicDigaCatalog.Macros.LASER_HOURS)
                 }
             )
 
             ServiceActionCard(
-                title = "ERRO RAM DRIVE (42)",
-                description = "Exibe o último código de erro da unidade óptica DVD-RAM.",
-                buttonText = "Executar [4][2]",
+                title = "RAM DRIVE ERROR (42)",
+                description = "Displays the most recent optical drive RAM mechanism error code.",
+                buttonText = "Execute [4][2]",
                 containerColor = DigaSurface,
                 accentColor = DigaBlue,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Último Erro RAM Drive (42)", PanasonicIrCodes.Macros.RAM_DRIVE_LAST_ERROR)
+                    onRunMacro(PanasonicDigaCatalog.Macros.RAM_DRIVE_LAST_ERROR)
                 }
             )
         }
 
-        // --- SEÇÃO 2: HISTÓRICO DE FALHAS (EEPROM) ---
+        // --- SECTION 2: EEPROM FAULT HISTORY & SELF-DIAGNOSTICS ---
         Text(
-            text = "📋 HISTÓRICO DE FALHAS (EEPROM)",
+            text = "📋 EEPROM FAULT LOG & SELF-DIAGNOSTICS",
             style = MaterialTheme.typography.labelSmall,
             color = DigaAmber,
             fontWeight = FontWeight.Bold
@@ -106,14 +110,14 @@ fun ServiceTab(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = "HISTÓRICO GERAL DE ERROS & LIMPEZA",
+                    text = "FAULT RECALL & ERROR BUFFER MANAGEMENT",
                     color = DigaAmber,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Lê os códigos de auto-diagnóstico (U**, H**, F**) salvos na memória não volátil.",
+                    text = "Reads self-diagnostic error codes (U**, H**, F**) stored in NVRAM/EEPROM memory.",
                     color = Color.LightGray,
                     fontSize = 12.sp
                 )
@@ -125,33 +129,33 @@ fun ServiceTab(
                 ) {
                     Button(
                         onClick = {
-                            onRunMacro("Último Erro Geral (01)", PanasonicIrCodes.Macros.ERROR_HISTORY_LATEST)
+                            onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_LATEST)
                         },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("Último Erro [0][1]", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 12.sp)
+                        Text("Latest Error [0][1]", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 12.sp)
                     }
 
                     Button(
                         onClick = {
-                            onRunMacro("Limpar Erro para F00 (98)", PanasonicIrCodes.Macros.CLEAR_ERROR_F00)
+                            onRunMacro(PanasonicDigaCatalog.Macros.CLEAR_ERROR_F00)
                         },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("Limpar [9][8] (F00)", fontSize = 12.sp)
+                        Text("Clear [9][8] (F00)", fontSize = 12.sp)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = DigaSurfaceVariant)
+                HorizontalDivider(color = DigaSurfaceVariant)
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Inspeção de Slots Históricos (Modo 65):",
+                    text = "Historical Error Log Slots (Mode 65 Buffer):",
                     color = Color.Gray,
                     fontSize = 11.sp
                 )
@@ -162,35 +166,35 @@ fun ServiceTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Button(
-                        onClick = { onRunMacro("Histórico Slot 1 (65-01)", PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_1) },
+                        onClick = { onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_1) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant)
                     ) { Text("Slot 1", fontSize = 11.sp) }
 
                     Button(
-                        onClick = { onRunMacro("Histórico Slot 2 (65-02)", PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_2) },
+                        onClick = { onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_2) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant)
                     ) { Text("Slot 2", fontSize = 11.sp) }
 
                     Button(
-                        onClick = { onRunMacro("Histórico Slot 3 (65-03)", PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_3) },
+                        onClick = { onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_3) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant)
                     ) { Text("Slot 3", fontSize = 11.sp) }
 
                     Button(
-                        onClick = { onRunMacro("Histórico Slot 4 (65-04)", PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_4) },
+                        onClick = { onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_4) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant)
                     ) { Text("Slot 4", fontSize = 11.sp) }
 
                     Button(
-                        onClick = { onRunMacro("Histórico Slot 5 (65-05)", PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_5) },
+                        onClick = { onRunMacro(PanasonicDigaCatalog.Macros.ERROR_HISTORY_SLOT_5) },
                         modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DigaSurfaceVariant)
@@ -199,9 +203,9 @@ fun ServiceTab(
             }
         }
 
-        // --- SEÇÃO 3: TESTES DE HARDWARE, MECÂNICA & DISPLAY ---
+        // --- SECTION 3: HARDWARE DIAGNOSTICS & MECHANICAL CYCLES ---
         Text(
-            text = "🔬 TESTES DE HARDWARE, HDD & DISPLAY",
+            text = "🔬 HARDWARE DIAGNOSTICS, HDD & DISPLAY",
             style = MaterialTheme.typography.labelSmall,
             color = DigaGreen,
             fontWeight = FontWeight.Bold
@@ -212,26 +216,26 @@ fun ServiceTab(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ServiceActionCard(
-                title = "TESTE HDD (31)",
-                description = "Varredura física de setores e realocação automática no MEIHDFS.",
-                buttonText = "Executar [3][1]",
+                title = "HDD TEST (31)",
+                description = "SMART surface scan and bad sector reallocation in MEIHDFS filesystem.",
+                buttonText = "Execute [3][1]",
                 containerColor = DigaSurface,
                 accentColor = DigaGreen,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Teste Superfície HDD (31)", PanasonicIrCodes.Macros.HDD_SURFACE_TEST)
+                    onRunMacro(PanasonicDigaCatalog.Macros.HDD_SURFACE_TEST)
                 }
             )
 
             ServiceActionCard(
-                title = "TESTE DISPLAY (00)",
-                description = "Acende 100% dos segmentos e ícones do painel VFD.",
-                buttonText = "Executar [0][0]",
+                title = "VFD DISPLAY (00)",
+                description = "Illuminates 100% of fluorescent segments and annunciator icons.",
+                buttonText = "Execute [0][0]",
                 containerColor = DigaSurface,
                 accentColor = DigaGreen,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Teste Segmentos VFD (00)", PanasonicIrCodes.Macros.VFD_SEGMENTS_TEST)
+                    onRunMacro(PanasonicDigaCatalog.Macros.VFD_SEGMENTS_TEST)
                 }
             )
         }
@@ -241,42 +245,45 @@ fun ServiceTab(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ServiceActionCard(
-                title = "CICLO GAVETA (91)",
-                description = "Ciclo contínuo mecânico de abertura/fechamento do leitor óptico.",
-                buttonText = "Executar [9][1]",
+                title = "TRAY CYCLE (91)",
+                description = "Continuous optical drive load/eject mechanical stress test.",
+                buttonText = "Execute [9][1]",
                 containerColor = DigaSurface,
                 accentColor = DigaSurfaceVariant,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Teste de Ciclo da Gaveta (91)", PanasonicIrCodes.Macros.TRAY_CYCLE_TEST)
+                    onRunMacro(PanasonicDigaCatalog.Macros.TRAY_CYCLE_TEST)
                 }
             )
 
             ServiceActionCard(
-                title = "I/O VÍDEO (80 / 81)",
-                description = "Padrões de calibração RGB / Componente / S-Video.",
-                buttonText = "Padrão [8][1]",
+                title = "VIDEO I/O (80 / 81)",
+                description = "Hardware video encoder test patterns for RGB/Component/S-Video.",
+                buttonText = "Pattern [8][1]",
                 containerColor = DigaSurface,
                 accentColor = DigaSurfaceVariant,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    onRunMacro("Teste Barramento Vídeo 81", PanasonicIrCodes.Macros.VIDEO_IO_TEST_81)
+                    onRunMacro(PanasonicDigaCatalog.Macros.VIDEO_IO_TEST_81)
                 }
             )
         }
 
-        // --- BOTÃO DE SAÍDA SEGURA DO SERVICE MODE ---
+        // --- SAFE SERVICE MODE EXIT ---
         Button(
-            onClick = { onSendCommand("POWER (Sair do Modo de Serviço)", PanasonicIrCodes.POWER) },
+            onClick = { onSendCommand("EXIT SERVICE MODE (POWER)", PanasonicDigaCatalog.OBC.POWER, false) },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = DigaRed),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("SAIR DO SERVICE MODE (POWER) ⏻", fontWeight = FontWeight.Bold)
+            Text("EXIT SERVICE MODE (POWER) ⏻", fontWeight = FontWeight.Bold)
         }
     }
 }
 
+/**
+ * Reusable diagnostic action card for service bench commands.
+ */
 @Composable
 fun ServiceActionCard(
     title: String,

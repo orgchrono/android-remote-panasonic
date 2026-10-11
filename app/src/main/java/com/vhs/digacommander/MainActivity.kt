@@ -6,12 +6,20 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.vhs.digacommander.core.ir.ConsumerIrTransmitter
-import com.vhs.digacommander.core.ir.DigaMacroPipeline
-import com.vhs.digacommander.ui.DigaApp
-import com.vhs.digacommander.ui.theme.DigaDarkBackground
-import com.vhs.digacommander.ui.theme.PanasonicDigaCommanderTheme
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.vhs.digacommander.data.ir.ConsumerIrTransmitter
+import com.vhs.digacommander.domain.pipeline.DigaMacroPipeline
+import com.vhs.digacommander.presentation.theme.DigaDarkBackground
+import com.vhs.digacommander.presentation.theme.PanasonicDigaCommanderTheme
+import com.vhs.digacommander.presentation.ui.DigaMainScreen
+import com.vhs.digacommander.presentation.viewmodel.DigaViewModel
 
+/**
+ * Main Android activity hosting the Jetpack Compose DIGA Commander interface.
+ * Initializes the hardware Consumer IR transmitter, coroutine pipeline,
+ * and binds the reactive MVVM presentation layer.
+ */
 class MainActivity : ComponentActivity() {
 
     private lateinit var transmitter: ConsumerIrTransmitter
@@ -20,9 +28,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializa a camada de hardware IR e pipeline seguro de macros
+        // Initialize hardware Consumer IR abstraction and monotonic coroutine pipeline
         transmitter = ConsumerIrTransmitter(this)
         macroPipeline = DigaMacroPipeline(transmitter)
+
+        // Bind ViewModel scoped to ComponentActivity lifecycle
+        val factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return DigaViewModel(transmitter, macroPipeline) as T
+            }
+        }
+        val viewModel = ViewModelProvider(this, factory)[DigaViewModel::class.java]
 
         setContent {
             PanasonicDigaCommanderTheme {
@@ -30,10 +47,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = DigaDarkBackground
                 ) {
-                    DigaApp(
-                        transmitter = transmitter,
-                        macroPipeline = macroPipeline
-                    )
+                    DigaMainScreen(viewModel = viewModel)
                 }
             }
         }
@@ -41,6 +55,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        macroPipeline.cancelMacro()
+        if (::macroPipeline.isInitialized) {
+            macroPipeline.cancelMacro()
+        }
     }
 }
