@@ -11,9 +11,13 @@ all: test build
 
 build:
 	$(GRADLEW) assembleDebug
+	@powershell -Command "New-Item -ItemType Directory -Force -Path apks | Out-Null; Copy-Item 'app/build/outputs/apk/debug/app-debug.apk' 'Panasonic-DIGA-Commander-debug.apk'; Copy-Item 'app/build/outputs/apk/debug/app-debug.apk' 'apks/Panasonic-DIGA-Commander-debug.apk'"
+	@echo [+] Debug APK available: Panasonic-DIGA-Commander-debug.apk
 
 release:
 	$(GRADLEW) assembleRelease
+	@powershell -Command "New-Item -ItemType Directory -Force -Path apks | Out-Null; Copy-Item 'app/build/outputs/apk/release/app-release.apk' 'Panasonic-DIGA-Commander-release.apk'; Copy-Item 'app/build/outputs/apk/release/app-release.apk' 'apks/Panasonic-DIGA-Commander-release.apk'"
+	@echo [+] Release APK available: Panasonic-DIGA-Commander-release.apk
 
 test:
 	$(GRADLEW) test

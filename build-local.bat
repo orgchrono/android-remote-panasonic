@@ -6,7 +6,7 @@ REM   DIGA Commander Pro - Native Windows CMD Build Script
 REM ==========================================================
 
 set "TASK=%~1"
-if "%TASK%"=="" set "TASK=assembleDebug"
+if "%TASK%"=="" set "TASK=assembleRelease"
 
 REM 1. Discover JDK 17
 if not defined JAVA_HOME (
@@ -41,8 +41,28 @@ call "%~dp0gradlew.bat" %TASK%
 set "EXIT_CODE=%ERRORLEVEL%"
 
 if %EXIT_CODE% equ 0 (
+    echo.
+    echo ==========================================================
     echo [SUCCESS] Gradle task '%TASK%' completed successfully!
+    echo ==========================================================
+    if not exist "%~dp0apks" mkdir "%~dp0apks"
+    if exist "%~dp0app\build\outputs\apk\release\app-release.apk" (
+        copy /y "%~dp0app\build\outputs\apk\release\app-release.apk" "%~dp0Panasonic-DIGA-Commander-release.apk" >nul
+        copy /y "%~dp0app\build\outputs\apk\release\app-release.apk" "%~dp0apks\Panasonic-DIGA-Commander-release.apk" >nul
+        echo [*] RELEASE APK GERADO:
+        echo     - %~dp0Panasonic-DIGA-Commander-release.apk
+        echo     - %~dp0apks\Panasonic-DIGA-Commander-release.apk
+    )
+    if exist "%~dp0app\build\outputs\apk\debug\app-debug.apk" (
+        copy /y "%~dp0app\build\outputs\apk\debug\app-debug.apk" "%~dp0Panasonic-DIGA-Commander-debug.apk" >nul
+        copy /y "%~dp0app\build\outputs\apk\debug\app-debug.apk" "%~dp0apks\Panasonic-DIGA-Commander-debug.apk" >nul
+        echo [*] DEBUG APK GERADO:
+        echo     - %~dp0Panasonic-DIGA-Commander-debug.apk
+        echo     - %~dp0apks\Panasonic-DIGA-Commander-debug.apk
+    )
+    echo ==========================================================
 ) else (
+    echo.
     echo [FAILURE] Gradle task '%TASK%' failed with exit code %EXIT_CODE%
 )
 

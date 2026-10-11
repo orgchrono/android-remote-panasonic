@@ -6,7 +6,7 @@ set -eo pipefail
 #   Compatible with Linux, macOS, WSL, and Git Bash
 # ==========================================================
 
-TASK="${1:-assembleDebug}"
+TASK="${1:-assembleRelease}"
 
 echo "=========================================================="
 echo "  DIGA Commander Pro - Cross-Platform Build Pipeline"
@@ -46,4 +46,21 @@ chmod +x "$SCRIPT_DIR/gradlew"
 
 echo "[*] Executing Gradle Task: $TASK ..."
 "$SCRIPT_DIR/gradlew" "$TASK"
+
+mkdir -p "$SCRIPT_DIR/apks"
+if [ -f "$SCRIPT_DIR/app/build/outputs/apk/release/app-release.apk" ]; then
+    cp "$SCRIPT_DIR/app/build/outputs/apk/release/app-release.apk" "$SCRIPT_DIR/Panasonic-DIGA-Commander-release.apk"
+    cp "$SCRIPT_DIR/app/build/outputs/apk/release/app-release.apk" "$SCRIPT_DIR/apks/Panasonic-DIGA-Commander-release.apk"
+    echo "[*] RELEASE APK GERADO:"
+    echo "    - $SCRIPT_DIR/Panasonic-DIGA-Commander-release.apk"
+    echo "    - $SCRIPT_DIR/apks/Panasonic-DIGA-Commander-release.apk"
+fi
+if [ -f "$SCRIPT_DIR/app/build/outputs/apk/debug/app-debug.apk" ]; then
+    cp "$SCRIPT_DIR/app/build/outputs/apk/debug/app-debug.apk" "$SCRIPT_DIR/Panasonic-DIGA-Commander-debug.apk"
+    cp "$SCRIPT_DIR/app/build/outputs/apk/debug/app-debug.apk" "$SCRIPT_DIR/apks/Panasonic-DIGA-Commander-debug.apk"
+    echo "[*] DEBUG APK GERADO:"
+    echo "    - $SCRIPT_DIR/Panasonic-DIGA-Commander-debug.apk"
+    echo "    - $SCRIPT_DIR/apks/Panasonic-DIGA-Commander-debug.apk"
+fi
+
 echo "[SUCCESS] Task '$TASK' completed successfully!"

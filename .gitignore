@@ -9,5 +9,6 @@ build/
 app/build/
 build-artifacts/
 *.apk
+apks/
 .externalNativeBuild
 .cxx
