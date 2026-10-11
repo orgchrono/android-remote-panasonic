@@ -1,8 +1,8 @@
 package com.vhs.digacommander.core.ir
 
 /**
- * Catálogo completo de códigos infravermelhos Philips Pronto Hex para a linha
- * de gravadores Panasonic DIGA (DMR-EH55, DMR-EH50, DMR-EH65, DMR-ES10/15).
+ * Catálogo completo de códigos infravermelhos Philips Pronto Hex e macros de serviço
+ * para gravadores Panasonic DIGA (DMR-EH55, DMR-EH50, DMR-EH65, DMR-EX768, DMR-ES10/15).
  *
  * Protocolo: Matsushita / Kaseikyo 48-bit (portadora 37.010 kHz / 38.029 kHz).
  */
@@ -46,70 +46,200 @@ object PanasonicIrCodes {
     const val CANCEL = "0000 0070 0000 0032 0080 0040 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0030 0010 0010 0010 0030 0010 0010 0010 0030 0010 0030 0010 0010 0010 0ACD"
 
     /**
-     * Dicionário com todas as macros de serviço e seus comandos sequenciais.
+     * Dicionário exaustivo de macros de serviço, diagnósticos de bancada e hacks.
      */
     object Macros {
 
-        /** Horas de uso do Laser Óptico (Comando 41 no Service Mode) */
+        // ==========================================
+        // 🩺 SAÚDE ÓPTICA, HORÍMETRO & ERROS DE DRIVE
+        // ==========================================
+
+        /** Horas de uso do Laser Óptico (Comando 41 no Service Mode - Exibe L****) */
         val LASER_HOURS = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 4", DIGIT_4, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 1", DIGIT_1, 500L)
+            DigaMacroPipeline.MacroCommand("Horímetro (Dígito 4)", DIGIT_4, 500L),
+            DigaMacroPipeline.MacroCommand("Horímetro (Dígito 1)", DIGIT_1, 500L)
         )
 
-        /** Histórico de Falhas / Erros Gravados na EEPROM (Comando 01 no Service Mode) */
-        val ERROR_HISTORY = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 0", DIGIT_0, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 1", DIGIT_1, 500L)
+        /** Último Erro do Drive DVD-RAM (Comando 42 no Service Mode) */
+        val RAM_DRIVE_LAST_ERROR = listOf(
+            DigaMacroPipeline.MacroCommand("Erro RAM (Dígito 4)", DIGIT_4, 500L),
+            DigaMacroPipeline.MacroCommand("Erro RAM (Dígito 2)", DIGIT_2, 500L)
         )
+
+        // ==========================================
+        // 📋 INSPEÇÃO DE ERROS EEPROM & DIAGNÓSTICO
+        // ==========================================
+
+        /** Último Erro Geral Registrado na EEPROM (Comando 01 no Service Mode - U**/H**/F**) */
+        val ERROR_HISTORY_LATEST = listOf(
+            DigaMacroPipeline.MacroCommand("Falhas (Dígito 0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Falhas (Dígito 1)", DIGIT_1, 500L)
+        )
+
+        /** Iniciar Leitura da Tabela Estendida dos Últimos 19 Erros (Comando 65) */
+        val ERROR_HISTORY_INIT_65 = listOf(
+            DigaMacroPipeline.MacroCommand("Modo Histórico (Dígito 6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Modo Histórico (Dígito 5)", DIGIT_5, 500L)
+        )
+
+        /** Histórico Slot 1: Erro mais recente na memória (65 -> 01) */
+        val ERROR_HISTORY_SLOT_1 = listOf(
+            DigaMacroPipeline.MacroCommand("Histórico (6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Histórico (5)", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 01 (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 01 (1)", DIGIT_1, 500L)
+        )
+
+        /** Histórico Slot 2: Segundo erro anterior na memória (65 -> 02) */
+        val ERROR_HISTORY_SLOT_2 = listOf(
+            DigaMacroPipeline.MacroCommand("Histórico (6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Histórico (5)", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 02 (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 02 (2)", DIGIT_2, 500L)
+        )
+
+        /** Histórico Slot 3: Terceiro erro anterior na memória (65 -> 03) */
+        val ERROR_HISTORY_SLOT_3 = listOf(
+            DigaMacroPipeline.MacroCommand("Histórico (6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Histórico (5)", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 03 (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 03 (3)", DIGIT_3, 500L)
+        )
+
+        /** Histórico Slot 4: Quarto erro anterior na memória (65 -> 04) */
+        val ERROR_HISTORY_SLOT_4 = listOf(
+            DigaMacroPipeline.MacroCommand("Histórico (6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Histórico (5)", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 04 (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 04 (4)", DIGIT_4, 500L)
+        )
+
+        /** Histórico Slot 5: Quinto erro anterior na memória (65 -> 05) */
+        val ERROR_HISTORY_SLOT_5 = listOf(
+            DigaMacroPipeline.MacroCommand("Histórico (6)", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Histórico (5)", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 05 (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Slot 05 (5)", DIGIT_5, 500L)
+        )
+
+        /** Limpar Último Erro Temporário Gravando F00 (Comando 98) */
+        val CLEAR_ERROR_F00 = listOf(
+            DigaMacroPipeline.MacroCommand("Limpar Erro (9)", DIGIT_9, 500L),
+            DigaMacroPipeline.MacroCommand("Gravar F00 (8)", DIGIT_8, 500L)
+        )
+
+        // ==========================================
+        // 🔬 TESTES DE HARDWARE, HDD & DISPLAY
+        // ==========================================
 
         /** Leitura do Código de Região Gravado na Placa (Comando 02 no Service Mode) */
         val REGION_READOUT = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 0", DIGIT_0, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 2", DIGIT_2, 500L)
+            DigaMacroPipeline.MacroCommand("Região (Dígito 0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Região (Dígito 2)", DIGIT_2, 500L)
         )
 
         /** Teste de Integridade / Superfície do HDD (Comando 31 no Service Mode) */
         val HDD_SURFACE_TEST = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 3", DIGIT_3, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 1", DIGIT_1, 500L)
+            DigaMacroPipeline.MacroCommand("Scan HDD (Dígito 3)", DIGIT_3, 500L),
+            DigaMacroPipeline.MacroCommand("Scan HDD (Dígito 1)", DIGIT_1, 500L)
         )
 
         /** Teste de Todos os Segmentos do Display VFD Frontal (Comando 00) */
         val VFD_SEGMENTS_TEST = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 0", DIGIT_0, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 0", DIGIT_0, 500L)
+            DigaMacroPipeline.MacroCommand("VFD Test (Dígito 0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("VFD Test (Dígito 0)", DIGIT_0, 500L)
         )
 
-        /** Teste de Saída de Vídeo / Barramento I/O (Comando 81) */
-        val VIDEO_IO_TEST = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 8", DIGIT_8, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 1", DIGIT_1, 500L)
+        /** Teste de Saída de Vídeo / Barramento I/O 80 (Comando 80) */
+        val VIDEO_IO_TEST_80 = listOf(
+            DigaMacroPipeline.MacroCommand("Vídeo I/O (Dígito 8)", DIGIT_8, 500L),
+            DigaMacroPipeline.MacroCommand("Padrão 80 (Dígito 0)", DIGIT_0, 500L)
         )
 
-        /** Restauração de Fábrica / Hard Reset de NVRAM (Comando 99 no Service Mode) */
-        val FACTORY_RESET = listOf(
-            DigaMacroPipeline.MacroCommand("Dígito 9", DIGIT_9, 500L),
-            DigaMacroPipeline.MacroCommand("Dígito 9", DIGIT_9, 500L)
+        /** Teste de Saída de Vídeo / Barramento I/O 81 (Comando 81) */
+        val VIDEO_IO_TEST_81 = listOf(
+            DigaMacroPipeline.MacroCommand("Vídeo I/O (Dígito 8)", DIGIT_8, 500L),
+            DigaMacroPipeline.MacroCommand("Padrão 81 (Dígito 1)", DIGIT_1, 500L)
         )
+
+        /** Teste de Ciclo Contínuo da Gaveta (Comando 91 - Abertura/Fechamento Mecânico) */
+        val TRAY_CYCLE_TEST = listOf(
+            DigaMacroPipeline.MacroCommand("Ciclo Gaveta (9)", DIGIT_9, 500L),
+            DigaMacroPipeline.MacroCommand("Ciclo Gaveta (1)", DIGIT_1, 500L)
+        )
+
+        // ==========================================
+        // 🌟 HACKS DE DESBLOQUEIO & MULTI-REGIÃO
+        // ==========================================
 
         /**
          * Macro Completa Multi-Região (DVD Region Free / Região 0)
          * Injeta a sequência: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 0 -> AUDIO -> MEDIA SERVER
-         * com intervalo rígido de 500 ms por caractere.
+         * com intervalo rígido de 500 ms por caractere (Gaveta aberta e vazia).
          */
         val MULTI_REGION_HACK = listOf(
-            DigaMacroPipeline.MacroCommand("Passo 1/12: Dígito 1", DIGIT_1, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 2/12: Dígito 2", DIGIT_2, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 3/12: Dígito 3", DIGIT_3, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 4/12: Dígito 4", DIGIT_4, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 5/12: Dígito 5", DIGIT_5, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 6/12: Dígito 6", DIGIT_6, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 7/12: Dígito 7", DIGIT_7, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 8/12: Dígito 8", DIGIT_8, 500L),
-            DigaMacroPipeline.MacroCommand("Passo 9/12: Dígito 9", DIGIT_9, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 01/12: Dígito 1", DIGIT_1, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 02/12: Dígito 2", DIGIT_2, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 03/12: Dígito 3", DIGIT_3, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 04/12: Dígito 4", DIGIT_4, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 05/12: Dígito 5", DIGIT_5, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 06/12: Dígito 6", DIGIT_6, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 07/12: Dígito 7", DIGIT_7, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 08/12: Dígito 8", DIGIT_8, 500L),
+            DigaMacroPipeline.MacroCommand("Passo 09/12: Dígito 9", DIGIT_9, 500L),
             DigaMacroPipeline.MacroCommand("Passo 10/12: Dígito 0", DIGIT_0, 500L),
             DigaMacroPipeline.MacroCommand("Passo 11/12: AUDIO", AUDIO, 500L),
             DigaMacroPipeline.MacroCommand("Passo 12/12: MEDIA SERVER", MEDIA_SERVER, 500L)
+        )
+
+        /** Verificação Pós-Hack: Lê se a região retornou 00 no display */
+        val VERIFY_REGION_FREE = listOf(
+            DigaMacroPipeline.MacroCommand("Ler Região (0)", DIGIT_0, 500L),
+            DigaMacroPipeline.MacroCommand("Ler Região (2)", DIGIT_2, 500L)
+        )
+
+        /** Destravar Painel Físico Bloqueado (Child Lock / X-HOLD / LOCKED) - ENTER sustentado 5s */
+        val CHILD_LOCK_UNLOCK = List(10) {
+            DigaMacroPipeline.MacroCommand("Pulso Desbloqueio ENTER (${it + 1}/10)", ENTER_OK, 450L)
+        }
+
+        // ==========================================
+        // 📡 SINCRONIZAÇÃO DE CÓDIGO DE CONTROLE
+        // ==========================================
+
+        /** Sincronizar Controle Modo 1 (DVD 1) - Destrava quando o painel pede Modo 1 */
+        val SYNC_REMOTE_MODE_1 = List(6) {
+            DigaMacroPipeline.MacroCommand("Sincronizar DVD 1 (${it + 1}/6)", DIGIT_1, 500L)
+        }
+
+        /** Sincronizar Controle Modo 2 (DVD 2) - Resolve o erro "SET 2" no display */
+        val SYNC_REMOTE_MODE_2 = List(6) {
+            DigaMacroPipeline.MacroCommand("Sincronizar DVD 2 (${it + 1}/6)", DIGIT_2, 500L)
+        }
+
+        /** Sincronizar Controle Modo 3 (DVD 3) - Resolve o erro "SET 3" no display */
+        val SYNC_REMOTE_MODE_3 = List(6) {
+            DigaMacroPipeline.MacroCommand("Sincronizar DVD 3 (${it + 1}/6)", DIGIT_3, 500L)
+        }
+
+        // ==========================================
+        // 🚨 RESET TOTAL & INICIALIZAÇÃO NVRAM
+        // ==========================================
+
+        /** Restauração de Fábrica / Hard Reset de NVRAM (Comando 99 no Service Mode - Exibe CLEAR) */
+        val FACTORY_RESET = listOf(
+            DigaMacroPipeline.MacroCommand("Reset Fábrica (9)", DIGIT_9, 500L),
+            DigaMacroPipeline.MacroCommand("Confirmar Clear (9)", DIGIT_9, 500L)
+        )
+
+        /** Bypass TVGOS (Injeção de Código Postal 00000 para Desligar Busca Noturna do HDD) */
+        val TVGOS_DISABLE_ZIP = listOf(
+            DigaMacroPipeline.MacroCommand("Zip Digito 0", DIGIT_0, 300L),
+            DigaMacroPipeline.MacroCommand("Zip Digito 0", DIGIT_0, 300L),
+            DigaMacroPipeline.MacroCommand("Zip Digito 0", DIGIT_0, 300L),
+            DigaMacroPipeline.MacroCommand("Zip Digito 0", DIGIT_0, 300L),
+            DigaMacroPipeline.MacroCommand("Zip Digito 0", DIGIT_0, 300L),
+            DigaMacroPipeline.MacroCommand("Confirmar ENTER", ENTER_OK, 500L)
         )
     }
 }

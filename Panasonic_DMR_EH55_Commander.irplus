@@ -44,15 +44,38 @@
   <button label="9" labelSize="16.0" span="1" backgroundColor="FF212121">0000 006D 0032 0000 007D 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0030 0010 0030 0010 0010 0010 0030 0010 0030 0010 0010 0010 0030 0010 0010 0010 0ACD</button>
   <button label="0" labelSize="16.0" span="1" backgroundColor="FF212121">0000 006D 0032 0000 007F 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0030 0010 0010 0010 0030 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0010 0030 0010 0030 0010 0010 0010 0010 0010 0030 0010 0030 0010 0030 0010 0030 0010 0010 0010 0010 0010 0030 0010 0010 0010 0ACD</button>
 
-  <!-- LINHA 9: MACROS DE SERVIÇO & DIAGNÓSTICO -->
+  <!-- LINHA 9: MACROS DE HORÍMETRO & ERROS ÓPTICOS -->
   <button label="HORAS LASER (41)" labelSize="12.0" span="2" backgroundColor="FF1976D2" macro="true">[Panasonic];4;{500};[Panasonic];1;</button>
-  <button label="HIST. ERROS (01)" labelSize="12.0" span="2" backgroundColor="FF1976D2" macro="true">[Panasonic];0;{500};[Panasonic];1;</button>
+  <button label="ERRO RAM DRIVE (42)" labelSize="12.0" span="2" backgroundColor="FF1976D2" macro="true">[Panasonic];4;{500};[Panasonic];2;</button>
 
-  <!-- LINHA 10: TESTES DE DISCO E REGIÃO -->
+  <!-- LINHA 10: AUTO-DIAGNÓSTICO EEPROM & LIMPEZA -->
+  <button label="ÚLTIMO ERRO (01)" labelSize="12.0" span="2" backgroundColor="FFF57F17" macro="true">[Panasonic];0;{500};[Panasonic];1;</button>
+  <button label="LIMPAR ERRO F00 (98)" labelSize="12.0" span="2" backgroundColor="FF455A64" macro="true">[Panasonic];9;{500};[Panasonic];8;</button>
+
+  <!-- LINHA 11: TESTES DE DISCO E DISPLAY -->
   <button label="LER REGIÃO (02)" labelSize="12.0" span="2" backgroundColor="FF388E3C" macro="true">[Panasonic];0;{500};[Panasonic];2;</button>
   <button label="TESTE HDD (31)" labelSize="12.0" span="2" backgroundColor="FF388E3C" macro="true">[Panasonic];3;{500};[Panasonic];1;</button>
 
-  <!-- LINHA 11: MACRO PRINCIPAL MULTI-REGIÃO -->
+  <!-- LINHA 12: TESTES DE VFD & GAVETA MECÂNICA -->
+  <button label="TESTE VFD SEG (00)" labelSize="12.0" span="2" backgroundColor="FF37474F" macro="true">[Panasonic];0;{500};[Panasonic];0;</button>
+  <button label="CICLO GAVETA (91)" labelSize="12.0" span="2" backgroundColor="FF37474F" macro="true">[Panasonic];9;{500};[Panasonic];1;</button>
+
+  <!-- LINHA 13: TESTES DE VÍDEO I/O (80 / 81) -->
+  <button label="I/O VÍDEO (80)" labelSize="12.0" span="2" backgroundColor="FF37474F" macro="true">[Panasonic];8;{500};[Panasonic];0;</button>
+  <button label="I/O VÍDEO (81)" labelSize="12.0" span="2" backgroundColor="FF37474F" macro="true">[Panasonic];8;{500};[Panasonic];1;</button>
+
+  <!-- LINHA 14: PAREAMENTO DE CONTROLE (SET 1 / SET 2 / SET 3) -->
+  <button label="SINCRONIZAR SET 1" labelSize="11.0" span="2" backgroundColor="FF0288D1" macro="true">[Panasonic];1;{500};[Panasonic];1;{500};[Panasonic];1;</button>
+  <button label="DESTRAVAR 'SET 2'" labelSize="11.0" span="2" backgroundColor="FF0288D1" macro="true">[Panasonic];2;{500};[Panasonic];2;{500};[Panasonic];2;</button>
+
+  <!-- LINHA 15: DESTRAVAR 'SET 3' E CHILD LOCK -->
+  <button label="DESTRAVAR 'SET 3'" labelSize="11.0" span="2" backgroundColor="FF0288D1" macro="true">[Panasonic];3;{500};[Panasonic];3;{500};[Panasonic];3;</button>
+  <button label="DESTRAVAR CHILD LOCK" labelSize="11.0" span="2" backgroundColor="FFF57F17" macro="true">[Panasonic];OK / ENTER;{450};[Panasonic];OK / ENTER;{450};[Panasonic];OK / ENTER;{450};[Panasonic];OK / ENTER;{450};[Panasonic];OK / ENTER;</button>
+
+  <!-- LINHA 16: HACK MULTI-REGIÃO PRINCIPAL (DVD REGION FREE) -->
   <button label="★ HACK MULTI-REGIÃO (DVD REGION FREE) ★" labelSize="12.0" span="4" backgroundColor="FF6A1B9A" macro="true">[Panasonic];1;{500};[Panasonic];2;{500};[Panasonic];3;{500};[Panasonic];4;{500};[Panasonic];5;{500};[Panasonic];6;{500};[Panasonic];7;{500};[Panasonic];8;{500};[Panasonic];9;{500};[Panasonic];0;{500};[Panasonic];AUDIO;{500};[Panasonic];MEDIA SERVER;</button>
+
+  <!-- LINHA 17: HARD RESET DE FÁBRICA (NVRAM 99) -->
+  <button label="⚠ FACTORY RESET / HARD RESET (99) ⚠" labelSize="12.0" span="4" backgroundColor="FFB71C1C" macro="true">[Panasonic];9;{500};[Panasonic];9;</button>
  </device>
 </irplus>

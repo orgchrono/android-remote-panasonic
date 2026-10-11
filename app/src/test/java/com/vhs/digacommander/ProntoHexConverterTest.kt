@@ -34,10 +34,40 @@ class ProntoHexConverterTest {
         assertTrue("Lead-in space deve ser próximo de 1262 µs, obtido: $leadInSpace", leadInSpace in 1200..1300)
 
         // Bit lógico 0 (0010 0010): 16 ciclos mark / 16 ciclos space -> ~421 µs mark / 421 µs space
-        // Verificando o par na posição 2 e 3
         val bitMark = signal.patternMicroseconds[2]
         val bitSpace = signal.patternMicroseconds[3]
         assertTrue("Bit mark deve ser ~421 µs, obtido: $bitMark", bitMark in 400..440)
         assertTrue("Bit space deve ser ~421 µs, obtido: $bitSpace", bitSpace in 400..440)
+    }
+
+    @Test
+    fun testAllPredefinedMacrosIntegrity() {
+        // Valida que todas as macros possuem passos com códigos Pronto Hex válidos
+        val macros = listOf(
+            PanasonicIrCodes.Macros.LASER_HOURS,
+            PanasonicIrCodes.Macros.RAM_DRIVE_LAST_ERROR,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_LATEST,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_1,
+            PanasonicIrCodes.Macros.ERROR_HISTORY_SLOT_2,
+            PanasonicIrCodes.Macros.REGION_READOUT,
+            PanasonicIrCodes.Macros.HDD_SURFACE_TEST,
+            PanasonicIrCodes.Macros.VFD_SEGMENTS_TEST,
+            PanasonicIrCodes.Macros.TRAY_CYCLE_TEST,
+            PanasonicIrCodes.Macros.CLEAR_ERROR_F00,
+            PanasonicIrCodes.Macros.MULTI_REGION_HACK,
+            PanasonicIrCodes.Macros.CHILD_LOCK_UNLOCK,
+            PanasonicIrCodes.Macros.SYNC_REMOTE_MODE_2,
+            PanasonicIrCodes.Macros.FACTORY_RESET
+        )
+
+        for (macro in macros) {
+            assertTrue("Macro não pode ser vazia", macro.isNotEmpty())
+            for (step in macro) {
+                val converted = ProntoHexConverter.convert(step.prontoHex)
+                assertTrue("Portadora deve ser 37kHz ou 38kHz", converted.carrierFrequency in 36000..39000)
+                assertTrue("Padrão de pulsos deve possuir pelo menos 50 pulsos", converted.patternMicroseconds.size >= 50)
+                assertTrue("Atraso deve ser positivo", step.postDelayMs > 0)
+            }
+        }
     }
 }
