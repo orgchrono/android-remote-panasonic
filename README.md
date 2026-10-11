@@ -83,6 +83,8 @@ O aplicativo e o perfil `.irplus` espelham com precisão cirúrgica todas as 52 
 
 ```
 android-remote-panasonic/
+├── .github/workflows/build-apk.yml        # CI/CD: Compilação automática de Release APK assinado
+├── PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md # 🗺️ Pesquisa e plano multi-modelos (E, ES, EH, EX, Combos VHS)
 ├── PANASONIC_DIGA_HACKS_GUIDE.md          # 🇬🇧 Complete Engineering Dossier (17 Hacks, Service Codes, Error Decodes)
 ├── PANASONIC_DIGA_ANDROID_IR_PLAN.md      # Dossiê arquitetural e planejamento inicial
 ├── Panasonic_DMR_EH55_Commander.irplus    # Perfil XML completo (52 botões físicos + 12 macros prontas)
@@ -155,3 +157,13 @@ O gravador Panasonic DMR-EH55 utiliza um microprocessador Renesas SuperH SH-4 co
 3. Aguarde o **Gradle Sync** concluir.
 4. Conecte o tablet **Samsung SM-T805M** com a Depuração USB ativada (`adb devices`).
 5. Clique em **Run 'app'** (`Shift + F10`) para instalar o APK diretamente no tablet.
+
+---
+
+## 🤖 CI/CD: Compilação Automática do APK (GitHub Actions)
+
+O repositório está equipado com uma esteira de automação no GitHub Actions (`.github/workflows/build-apk.yml`):
+* A cada commit ou pull request na branch `main`, o runner do GitHub executa os testes unitários (`./gradlew test`) e compila o APK de Release (`./gradlew assembleRelease`).
+* O APK assinado é publicado como artefato de workflow (**`Panasonic-DIGA-Commander-release.apk`**) e pode ser baixado diretamente na aba **Actions** do repositório no GitHub sem necessidade de compilar no computador.
+* Quando uma tag de versão for publicada (ex: `git tag v1.0.0 && git push origin v1.0.0`), uma **GitHub Release** oficial é gerada automaticamente com o APK anexado pronto para download.
+
