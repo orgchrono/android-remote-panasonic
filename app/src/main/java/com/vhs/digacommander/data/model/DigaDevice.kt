@@ -12,4 +12,7 @@ enum class DigaDevice(val id: Int) {
 
     /** 0x01 (1) - Panasonic Viera television controls */
     TV(0x01),
+
+    /** 0xFE (254) - Unassigned address used by the camera test beacon; no equipment reacts to it. */
+    DIAGNOSTIC(0xFE),
 }

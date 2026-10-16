@@ -68,6 +68,10 @@ object PanasonicDigaCatalog {
         const val MEDIA_SERVER = 0x77
         const val CANCEL = 0x8A
 
+        // TV control commands (Device 0x01)
+        const val VOL_UP = 0x20
+        const val VOL_DOWN = 0x21
+
         // VCR deck commands (Device 0x90)
         const val VCR_TRACKING_PLUS = 0x1A
         const val VCR_TRACKING_MINUS = 0x1B
@@ -135,6 +139,8 @@ object PanasonicDigaCatalog {
     val DIGIT_0 = getProntoHex(OBC.DIGIT_0)
     val MEDIA_SERVER = getProntoHex(OBC.MEDIA_SERVER)
     val CANCEL = getProntoHex(OBC.CANCEL)
+    val VOL_UP = getProntoHex(OBC.VOL_UP, device = DigaDevice.TV)
+    val VOL_DOWN = getProntoHex(OBC.VOL_DOWN, device = DigaDevice.TV)
 
     /**
      * Automated Bench Macros and Diagnostic Routines.

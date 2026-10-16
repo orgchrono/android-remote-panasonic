@@ -1,12 +1,17 @@
 package com.vhs.digacommander.data.ir
 
 import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.IrCapabilities
 import com.vhs.digacommander.data.model.IrSignal
+import com.vhs.digacommander.data.model.IrTransmitConfig
 import com.vhs.digacommander.data.model.RemoteMode
 
 /**
  * Domain-level contract for infrared hardware transmitters.
  * Decouples coroutine execution pipelines and ViewModels from physical Android hardware APIs.
+ *
+ * Every transmit call is blocking for the duration of the pulse train, so callers must invoke
+ * them from a background dispatcher.
  */
 interface IrTransmitter {
     /**
@@ -15,9 +20,29 @@ interface IrTransmitter {
     val isAvailable: Boolean
 
     /**
-     * Verifies if a given carrier frequency in Hertz is supported.
+     * Fresh snapshot of what the platform reports about the emitter (never cached).
+     */
+    val capabilities: IrCapabilities
+
+    /**
+     * Active transmission settings (timing unit, frame repetition).
+     */
+    val config: IrTransmitConfig
+
+    /**
+     * Replaces the active transmission settings.
+     */
+    fun updateConfig(config: IrTransmitConfig)
+
+    /**
+     * Verifies if a given carrier frequency in Hertz is natively supported by the driver.
      */
     fun isFrequencySupported(frequencyHz: Int): Boolean
+
+    /**
+     * Frequency that will really be emitted for a nominal [frequencyHz] after driver adaptation.
+     */
+    fun resolveCarrier(frequencyHz: Int): Int
 
     /**
      * Transmits a raw [IrSignal].

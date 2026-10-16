@@ -26,8 +26,8 @@ object ProntoHexConverter {
         require(freqCode > 0) { "Invalid carrier frequency divisor" }
 
         // Carrier frequency calculation: f = 1,000,000 / (freqCode * 0.241246)
-        val carrierFreq = (1_000_000.0 / (freqCode * PRONTO_TIMEBASE_CONSTANT)).roundToInt()
-        val cycleToMicroseconds = 1_000_000.0 / carrierFreq
+        val carrierFreq = (DigaTimings.MICROS_PER_SECOND / (freqCode * PRONTO_TIMEBASE_CONSTANT)).roundToInt()
+        val cycleToMicroseconds = DigaTimings.MICROS_PER_SECOND.toDouble() / carrierFreq
 
         val rawDataWords = tokens.subList(DigaTimings.PRONTO_HEADER_WORD_COUNT, tokens.size)
         val pattern =

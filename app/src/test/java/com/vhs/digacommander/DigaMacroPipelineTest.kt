@@ -1,8 +1,12 @@
 package com.vhs.digacommander
 
+import com.vhs.digacommander.data.ir.IrSignalAdapter
 import com.vhs.digacommander.data.ir.IrTransmitter
 import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.IrCapabilities
+import com.vhs.digacommander.data.model.IrFrequencyRange
 import com.vhs.digacommander.data.model.IrSignal
+import com.vhs.digacommander.data.model.IrTransmitConfig
 import com.vhs.digacommander.data.model.MacroCommand
 import com.vhs.digacommander.data.model.MacroExecutionState
 import com.vhs.digacommander.data.model.RemoteMode
@@ -10,6 +14,7 @@ import com.vhs.digacommander.domain.pipeline.DigaMacroPipeline
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -27,7 +32,25 @@ class FakeIrTransmitter(
     val transmittedPronto = mutableListOf<String>()
     val transmittedKaseikyo = mutableListOf<Triple<DigaDevice, RemoteMode, Int>>()
 
-    override fun isFrequencySupported(frequencyHz: Int): Boolean = isAvailable && supportedFrequencies.contains(frequencyHz)
+    override var config: IrTransmitConfig = IrTransmitConfig()
+        private set
+
+    override val capabilities: IrCapabilities
+        get() =
+            IrCapabilities(
+                hasEmitter = isAvailable,
+                serviceFound = true,
+                ranges = supportedFrequencies.map { IrFrequencyRange(it, it) },
+            )
+
+    override fun updateConfig(config: IrTransmitConfig) {
+        this.config = config
+    }
+
+    override fun resolveCarrier(frequencyHz: Int): Int = IrSignalAdapter.resolveCarrier(frequencyHz, capabilities.ranges)
+
+    override fun isFrequencySupported(frequencyHz: Int): Boolean =
+        isAvailable && IrSignalAdapter.isCarrierSupported(frequencyHz, capabilities.ranges)
 
     override fun transmit(signal: IrSignal): Result<Unit> =
         if (!isAvailable || shouldFail) {
@@ -136,5 +159,39 @@ class DigaMacroPipelineTest {
             advanceUntilIdle()
 
             assertEquals(MacroExecutionState.Cancelled, pipeline.state.value)
+        }
+
+    @Test
+    fun testCancelMidFlightEndsCancelledNotError() =
+        testScope.runTest {
+            val fakeTransmitter = FakeIrTransmitter(isAvailable = true)
+            val pipeline = DigaMacroPipeline(fakeTransmitter, scope = this)
+            val commands = listOf(MacroCommand("A", "0000 0070", 500L), MacroCommand("B", "0000 0070", 500L))
+
+            pipeline.execute(commands)
+            advanceTimeBy(100L)
+            assertTrue(pipeline.state.value is MacroExecutionState.Running)
+
+            pipeline.cancelMacro()
+            advanceUntilIdle()
+
+            assertEquals(MacroExecutionState.Cancelled, pipeline.state.value)
+            assertEquals(1, fakeTransmitter.transmittedPronto.size)
+        }
+
+    @Test
+    fun testRestartAfterCancelRunsToCompletion() =
+        testScope.runTest {
+            val fakeTransmitter = FakeIrTransmitter(isAvailable = true)
+            val pipeline = DigaMacroPipeline(fakeTransmitter, scope = this)
+            val commands = listOf(MacroCommand("A", "0000 0070", 500L), MacroCommand("B", "0000 0070", 50L))
+
+            pipeline.execute(commands)
+            advanceTimeBy(100L)
+            pipeline.cancelMacro()
+            pipeline.execute(commands)
+            advanceUntilIdle()
+
+            assertEquals(MacroExecutionState.Completed, pipeline.state.value)
         }
 }

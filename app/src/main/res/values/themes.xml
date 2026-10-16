@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PanasonicDigaCommander" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#FF121212</item>
+    <!-- Dark-only app: avoids the white flash on cold start and keeps system bars consistent. -->
+    <style name="Theme.PanasonicDigaCommander" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/diga_background</item>
+        <item name="android:statusBarColor">@color/diga_surface</item>
+        <item name="android:navigationBarColor">@color/diga_surface</item>
     </style>
 </resources>

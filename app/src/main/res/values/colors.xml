@@ -8,5 +8,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="diga_blue">#FF0288D1</color>
-    <color name="diga_red">#FFD32F2F</color>
+    <color name="diga_red">#FFC62828</color>
+    <color name="diga_background">#FF0E1116</color>
+    <color name="diga_surface">#FF1A1F27</color>
 </resources>

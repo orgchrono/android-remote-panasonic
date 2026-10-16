@@ -2,84 +2,151 @@ package com.vhs.digacommander.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
+import com.vhs.digacommander.presentation.theme.DigaBlueLight
+import com.vhs.digacommander.presentation.theme.DigaStatusError
+import com.vhs.digacommander.presentation.theme.DigaStatusOk
+import com.vhs.digacommander.presentation.theme.DigaStatusWarn
+import com.vhs.digacommander.presentation.theme.DigaSurfaceVariant
 import com.vhs.digacommander.presentation.theme.VfdBackground
 import com.vhs.digacommander.presentation.theme.VfdDim
 import com.vhs.digacommander.presentation.theme.VfdGlow
 import com.vhs.digacommander.presentation.theme.VfdText
+import com.vhs.digacommander.presentation.viewmodel.IrLinkStatus
 
 /**
- * Retro Vacuum Fluorescent Display (VFD) simulation component.
+ * Colour that communicates the IR link health at a glance.
+ */
+fun IrLinkStatus.indicatorColor(): Color =
+    when (this) {
+        IrLinkStatus.ONLINE -> DigaStatusOk
+        IrLinkStatus.ADAPTED -> DigaStatusWarn
+        IrLinkStatus.NO_HARDWARE -> DigaStatusError
+    }
+
+/**
+ * Single-line Vacuum Fluorescent Display (VFD) status bar.
+ * Combines the IR emitter status indicator, fluorescent command telemetry, and active recorder
+ * profile/channel badge into one compact horizontal bar so maximum screen height remains for panels.
  */
 @Composable
 fun VfdDisplay(
     mainText: String,
     subText: String,
     irStatusText: String,
-    headerTitle: String = DigaUiStrings.VFD_HEADER_TITLE,
+    irLinkStatus: IrLinkStatus,
+    badgeText: String = "",
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    val shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact)
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(VfdBackground, RoundedCornerShape(DigaUiDimensions.RadiusButton))
-                .border(DigaUiDimensions.BorderWidthStandard, VfdDim, RoundedCornerShape(DigaUiDimensions.RadiusButton))
-                .padding(DigaUiDimensions.PaddingCardCompact),
+                .heightIn(min = DigaUiDimensions.HeightVfdMin)
+                .background(VfdBackground, shape)
+                .border(DigaUiDimensions.BorderWidthHairline, VfdDim, shape)
+                .padding(
+                    horizontal = DigaUiDimensions.PaddingCardCompact,
+                    vertical = DigaUiDimensions.PaddingCompactV,
+                ),
+        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // Left: IR Link Status Dot + Carrier Label
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingTight),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = headerTitle,
-                    color = VfdDim,
-                    fontSize = DigaUiDimensions.TextSizeVfdStatus,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = irStatusText,
-                    color = if (irStatusText.contains(DigaUiStrings.VFD_ONLINE_KEYWORD)) VfdGlow else Color(0xFFFFB74D),
-                    fontSize = DigaUiDimensions.TextSizeVfdStatus,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            Box(
+                modifier =
+                    Modifier
+                        .size(DigaUiDimensions.SizeStatusDot)
+                        .background(irLinkStatus.indicatorColor(), CircleShape),
+            )
+            Text(
+                text = irStatusText,
+                color = irLinkStatus.indicatorColor(),
+                fontSize = DigaUiDimensions.TextSizeVfdStatus,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
 
-            Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
-
+        // Center: Single-line VFD Fluorescent Telemetry Readout
+        Row(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = mainText,
                 color = VfdGlow,
-                fontSize = DigaUiDimensions.TextSizeVfdDisplayMain,
+                fontSize = DigaUiDimensions.TextSizeVfdMain,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = DigaUiDimensions.LetterSpacingVfd,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            if (subText.isNotBlank()) {
+                Text(
+                    text = "${DigaUiStrings.VFD_SEPARATOR}$subText",
+                    color = VfdText,
+                    fontSize = DigaUiDimensions.TextSizeVfdSub,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
 
-            Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingTight))
-
-            Text(
-                text = subText,
-                color = VfdText,
-                fontSize = DigaUiDimensions.TextSizeVfdDisplaySub,
-                fontFamily = FontFamily.Monospace,
-            )
+        // Right: Active Profile & Channel Badge
+        if (badgeText.isNotBlank()) {
+            Surface(
+                shape = RoundedCornerShape(DigaUiDimensions.RadiusBadge),
+                color = DigaSurfaceVariant,
+            ) {
+                Text(
+                    text = badgeText,
+                    modifier =
+                        Modifier.padding(
+                            horizontal = DigaUiDimensions.PaddingBadgeH,
+                            vertical = DigaUiDimensions.SpacingMicro,
+                        ),
+                    fontSize = DigaUiDimensions.TextSizeVfdStatus,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    color = DigaBlueLight,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

@@ -1,11 +1,28 @@
 package com.vhs.digacommander.presentation.ui.tabs
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -14,7 +31,16 @@ import com.vhs.digacommander.data.model.MacroCommand
 import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
-import com.vhs.digacommander.presentation.theme.*
+import com.vhs.digacommander.presentation.theme.DigaOutline
+import com.vhs.digacommander.presentation.theme.DigaSurface
+import com.vhs.digacommander.presentation.theme.DigaTextPrimary
+import com.vhs.digacommander.presentation.theme.DigaTextSecondary
+import com.vhs.digacommander.presentation.ui.components.ChoiceRow
+import com.vhs.digacommander.presentation.ui.components.DigaBodyText
+import com.vhs.digacommander.presentation.ui.components.DigaCard
+import com.vhs.digacommander.presentation.ui.components.KeyStyle
+import com.vhs.digacommander.presentation.ui.components.RemoteKey
+import com.vhs.digacommander.presentation.ui.components.keyStyle
 
 /**
  * Advanced Hacks, Multi-Region Unlock, and Automated Recovery tab.
@@ -36,277 +62,148 @@ fun HacksTab(
     onRunMacro: (commands: List<MacroCommand>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(DigaUiDimensions.PaddingScreen),
-        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingScreenSections),
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        // =========================================================================
-        // 🔄 1. AUTOMATED OSD RECOVERY: RESTORE SET 2 / SET 3 BACK TO SET 1
-        // =========================================================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = DigaSurface),
+        Column(
+            modifier =
+                Modifier
+                    .widthIn(max = DigaUiDimensions.MaxContentWidth)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(DigaUiDimensions.PaddingScreen),
+            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingScreenSections),
         ) {
-            Column(modifier = Modifier.padding(DigaUiDimensions.PaddingCardInner)) {
-                Text(
-                    text = DigaUiStrings.HACKS_AUTO_RECOVERY_TITLE,
-                    color = DigaBlueLight,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeCardHeader,
-                )
-
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
-
-                Text(
-                    text = DigaUiStrings.HACKS_AUTO_RECOVERY_DESC,
-                    color = Color.LightGray,
-                    fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    lineHeight = DigaUiDimensions.LineHeightBody,
-                )
-
-                Spacer(modifier = Modifier.height(DigaUiDimensions.PaddingCardCompact))
+            // =====================================================================
+            // 1. AUTOMATED OSD RECOVERY: RESTORE SET 2 / SET 3 BACK TO SET 1
+            // =====================================================================
+            DigaCard(
+                title = DigaUiStrings.HACKS_AUTO_RECOVERY_TITLE,
+                icon = Icons.Filled.Restore,
+                accent = KeyStyle.Primary.headerAccent(),
+            ) {
+                DigaBodyText(text = DigaUiStrings.HACKS_AUTO_RECOVERY_DESC)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
                 ) {
-                    Button(
+                    RemoteKey(
+                        label = DigaUiStrings.HACKS_BTN_RESTORE_SET2,
                         onClick = { onSetAutoRestoreSet2ConfirmVisible(true) },
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .height(DigaUiDimensions.HeightStandardButton),
-                        colors = ButtonDefaults.buttonColors(containerColor = DigaGreen),
-                        shape = RoundedCornerShape(DigaUiDimensions.RadiusButton),
-                    ) {
-                        Text(
-                            text = DigaUiStrings.HACKS_BTN_RESTORE_SET2,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = DigaUiDimensions.TextSizeButtonCompact,
-                            lineHeight = DigaUiDimensions.LineHeightButtonTwoLine,
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                        style = KeyStyle.Success,
+                        height = DigaUiDimensions.HeightStandardButton,
+                    )
 
-                    Button(
+                    RemoteKey(
+                        label = DigaUiStrings.HACKS_BTN_RESTORE_SET3,
                         onClick = { onSetAutoRestoreSet3ConfirmVisible(true) },
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .height(DigaUiDimensions.HeightStandardButton),
-                        colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
-                        shape = RoundedCornerShape(DigaUiDimensions.RadiusButton),
-                    ) {
-                        Text(
-                            text = DigaUiStrings.HACKS_BTN_RESTORE_SET3,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = DigaUiDimensions.TextSizeButtonCompact,
-                            lineHeight = DigaUiDimensions.LineHeightButtonTwoLine,
-                            color = Color.Black,
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                        style = KeyStyle.Warning,
+                        height = DigaUiDimensions.HeightStandardButton,
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingCards))
-                HorizontalDivider(color = DigaSurfaceVariant)
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingCards))
+                HorizontalDivider(color = DigaOutline)
 
-                Text(
-                    text = DigaUiStrings.HACKS_MANUAL_SYNC_LABEL,
-                    color = Color.Gray,
-                    fontSize = DigaUiDimensions.TextSizeDescription,
-                )
+                DigaBodyText(text = DigaUiStrings.HACKS_MANUAL_SYNC_LABEL)
 
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
-
-                Row(
+                ChoiceRow(
+                    options = RemoteMode.entries,
+                    selected = activeMode,
+                    labelOf = { it.label },
+                    onSelect = onModeSelected,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
-                ) {
-                    RemoteMode.entries.forEach { mode ->
-                        val isSelected = activeMode == mode
-                        Button(
-                            onClick = { onModeSelected(mode) },
-                            modifier = Modifier.weight(1f),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) DigaBlue else DigaSurfaceVariant,
-                                    contentColor = if (isSelected) Color.White else Color.LightGray,
-                                ),
-                            shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact),
-                        ) {
-                            Text(
-                                mode.label,
-                                fontSize = DigaUiDimensions.TextSizeButtonCompact,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        }
-                    }
-                }
+                    accentOf = { mode -> mode.keyStyle() },
+                )
             }
-        }
 
-        // =========================================================================
-        // ★ 2. MASTER HACK: MULTI-REGION (DVD REGION FREE - REGION 0) ★
-        // =========================================================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = DigaSurface),
-        ) {
-            Column(modifier = Modifier.padding(DigaUiDimensions.PaddingCardInner)) {
-                Text(
-                    text = DigaUiStrings.HACKS_MULTI_REGION_TITLE,
-                    color = DigaPurple,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeCardHeader,
-                )
+            // =====================================================================
+            // 2. MASTER HACK: MULTI-REGION (DVD REGION FREE - REGION 0)
+            // =====================================================================
+            DigaCard(
+                title = DigaUiStrings.HACKS_MULTI_REGION_TITLE,
+                icon = Icons.Filled.Public,
+                accent = KeyStyle.Accent.headerAccent(),
+            ) {
+                DigaBodyText(text = DigaUiStrings.HACKS_MULTI_REGION_DESC)
 
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
-
-                Text(
-                    text = DigaUiStrings.HACKS_MULTI_REGION_DESC,
-                    color = Color.LightGray,
-                    fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    lineHeight = DigaUiDimensions.LineHeightBody,
-                )
-
-                Spacer(modifier = Modifier.height(DigaUiDimensions.PaddingCardCompact))
-
-                Button(
+                RemoteKey(
+                    label = DigaUiStrings.HACKS_MULTI_REGION_BTN,
                     onClick = { onSetMultiRegionConfirmVisible(true) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(DigaUiDimensions.HeightStandardButton),
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaPurple),
-                    shape = RoundedCornerShape(DigaUiDimensions.RadiusButton),
-                ) {
-                    Text(DigaUiStrings.HACKS_MULTI_REGION_BTN, fontWeight = FontWeight.Bold)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    style = KeyStyle.Accent,
+                    height = DigaUiDimensions.HeightStandardButton,
+                )
 
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingRows))
-
-                OutlinedButton(
+                RemoteKey(
+                    label = DigaUiStrings.HACKS_CHECK_REGION_BTN,
                     onClick = {
                         onRunMacro(PanasonicDigaCatalog.Macros.REGION_READOUT)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DigaPurple),
-                    shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact),
-                ) {
-                    Text(DigaUiStrings.HACKS_CHECK_REGION_BTN, fontSize = DigaUiDimensions.TextSizeButtonStandard)
-                }
+                    style = KeyStyle.Neutral,
+                )
             }
-        }
 
-        // =========================================================================
-        // 🔒 3. EMERGENCY FRONT PANEL LOCK OVERRIDE (CHILD LOCK / X-HOLD)
-        // =========================================================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = DigaSurface),
-        ) {
-            Column(modifier = Modifier.padding(DigaUiDimensions.PaddingCardInner)) {
-                Text(
-                    text = DigaUiStrings.HACKS_CHILD_LOCK_TITLE,
-                    color = DigaAmber,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeCardHeader,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingTight))
-                Text(
-                    text = DigaUiStrings.HACKS_CHILD_LOCK_DESC,
-                    color = Color.LightGray,
-                    fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    lineHeight = DigaUiDimensions.LineHeightCardText,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingCards))
-                Button(
+            // =====================================================================
+            // 3. EMERGENCY FRONT PANEL LOCK OVERRIDE (CHILD LOCK / X-HOLD)
+            // =====================================================================
+            DigaCard(
+                title = DigaUiStrings.HACKS_CHILD_LOCK_TITLE,
+                icon = Icons.Filled.Lock,
+                accent = KeyStyle.Warning.headerAccent(),
+            ) {
+                DigaBodyText(text = DigaUiStrings.HACKS_CHILD_LOCK_DESC)
+
+                RemoteKey(
+                    label = DigaUiStrings.HACKS_CHILD_LOCK_BTN,
                     onClick = {
                         onRunMacro(PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
-                    shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact),
-                ) {
-                    Text(
-                        DigaUiStrings.HACKS_CHILD_LOCK_BTN,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    )
-                }
+                    style = KeyStyle.Warning,
+                )
             }
-        }
 
-        // =========================================================================
-        // ⏱ 4. TVGOS EPG NIGHTLY SPIN-UP BYPASS (HDD LIFESPAN PROTECTION)
-        // =========================================================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = DigaSurface),
-        ) {
-            Column(modifier = Modifier.padding(DigaUiDimensions.PaddingCardInner)) {
-                Text(
-                    text = DigaUiStrings.HACKS_TVGOS_TITLE,
-                    color = DigaGreen,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeCardHeader,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingTight))
-                Text(
-                    text = DigaUiStrings.HACKS_TVGOS_DESC,
-                    color = Color.LightGray,
-                    fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    lineHeight = DigaUiDimensions.LineHeightCardText,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingCards))
-                Button(
+            // =====================================================================
+            // 4. TVGOS EPG NIGHTLY SPIN-UP BYPASS (HDD LIFESPAN PROTECTION)
+            // =====================================================================
+            DigaCard(
+                title = DigaUiStrings.HACKS_TVGOS_TITLE,
+                icon = Icons.Filled.Schedule,
+                accent = KeyStyle.Success.headerAccent(),
+            ) {
+                DigaBodyText(text = DigaUiStrings.HACKS_TVGOS_DESC)
+
+                RemoteKey(
+                    label = DigaUiStrings.HACKS_TVGOS_BTN,
                     onClick = {
                         onRunMacro(PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaGreen),
-                    shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact),
-                ) {
-                    Text(DigaUiStrings.HACKS_TVGOS_BTN, fontWeight = FontWeight.Bold, fontSize = DigaUiDimensions.TextSizeButtonStandard)
-                }
+                    style = KeyStyle.Success,
+                )
             }
-        }
 
-        // =========================================================================
-        // ⚠ 5. FACTORY MASTER RESET / NVRAM RE-INITIALIZATION (99)
-        // =========================================================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = DigaSurface),
-        ) {
-            Column(modifier = Modifier.padding(DigaUiDimensions.PaddingCardInner)) {
-                Text(
-                    text = DigaUiStrings.HACKS_RESET_TITLE,
-                    color = DigaRed,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeCardHeader,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingTight))
-                Text(
-                    text = DigaUiStrings.HACKS_RESET_DESC,
-                    color = Color.LightGray,
-                    fontSize = DigaUiDimensions.TextSizeButtonStandard,
-                    lineHeight = DigaUiDimensions.LineHeightCardText,
-                )
-                Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingCards))
-                OutlinedButton(
+            // =====================================================================
+            // 5. FACTORY MASTER RESET / NVRAM RE-INITIALIZATION (99)
+            // =====================================================================
+            DigaCard(
+                title = DigaUiStrings.HACKS_RESET_TITLE,
+                icon = Icons.Filled.Warning,
+                accent = KeyStyle.Danger.headerAccent(),
+            ) {
+                DigaBodyText(text = DigaUiStrings.HACKS_RESET_DESC)
+
+                RemoteKey(
+                    label = DigaUiStrings.HACKS_RESET_BTN,
                     onClick = { onSetResetConfirmVisible(true) },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DigaRed),
-                    shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact),
-                ) {
-                    Text(DigaUiStrings.HACKS_RESET_BTN, fontWeight = FontWeight.Bold)
-                }
+                    style = KeyStyle.Danger,
+                )
             }
         }
     }
@@ -317,101 +214,110 @@ fun HacksTab(
 
     // Confirmation Modal: Auto-Restore SET 2 -> SET 1
     if (showAutoRestoreSet2Confirm) {
-        AlertDialog(
-            onDismissRequest = { onSetAutoRestoreSet2ConfirmVisible(false) },
-            title = { Text(DigaUiStrings.DIALOG_SET2_TITLE) },
-            text = { Text(DigaUiStrings.DIALOG_SET2_BODY) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onSetAutoRestoreSet2ConfirmVisible(false)
-                        onRunMacro(PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaGreen),
-                ) {
-                    Text(DigaUiStrings.DIALOG_START_RECOVERY)
-                }
+        HacksConfirmDialog(
+            title = DigaUiStrings.DIALOG_SET2_TITLE,
+            body = DigaUiStrings.DIALOG_SET2_BODY,
+            confirmLabel = DigaUiStrings.DIALOG_START_RECOVERY,
+            confirmStyle = KeyStyle.Success,
+            onConfirm = {
+                onSetAutoRestoreSet2ConfirmVisible(false)
+                onRunMacro(PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET2_TO_SET1)
             },
-            dismissButton = {
-                TextButton(onClick = { onSetAutoRestoreSet2ConfirmVisible(false) }) {
-                    Text(DigaUiStrings.DIALOG_CANCEL)
-                }
-            },
+            onDismiss = { onSetAutoRestoreSet2ConfirmVisible(false) },
         )
     }
 
     // Confirmation Modal: Auto-Restore SET 3 -> SET 1
     if (showAutoRestoreSet3Confirm) {
-        AlertDialog(
-            onDismissRequest = { onSetAutoRestoreSet3ConfirmVisible(false) },
-            title = { Text(DigaUiStrings.DIALOG_SET3_TITLE) },
-            text = { Text(DigaUiStrings.DIALOG_SET3_BODY) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onSetAutoRestoreSet3ConfirmVisible(false)
-                        onRunMacro(PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaAmber),
-                ) {
-                    Text(DigaUiStrings.DIALOG_START_RECOVERY, color = Color.Black)
-                }
+        HacksConfirmDialog(
+            title = DigaUiStrings.DIALOG_SET3_TITLE,
+            body = DigaUiStrings.DIALOG_SET3_BODY,
+            confirmLabel = DigaUiStrings.DIALOG_START_RECOVERY,
+            confirmStyle = KeyStyle.Warning,
+            onConfirm = {
+                onSetAutoRestoreSet3ConfirmVisible(false)
+                onRunMacro(PanasonicDigaCatalog.Macros.AUTO_RESTORE_SET3_TO_SET1)
             },
-            dismissButton = {
-                TextButton(onClick = { onSetAutoRestoreSet3ConfirmVisible(false) }) {
-                    Text(DigaUiStrings.DIALOG_CANCEL)
-                }
-            },
+            onDismiss = { onSetAutoRestoreSet3ConfirmVisible(false) },
         )
     }
 
     // Confirmation Modal: Multi-Region Hack
     if (showMultiRegionConfirm) {
-        AlertDialog(
-            onDismissRequest = { onSetMultiRegionConfirmVisible(false) },
-            title = { Text(DigaUiStrings.DIALOG_MULTI_REGION_TITLE) },
-            text = { Text(DigaUiStrings.DIALOG_MULTI_REGION_BODY) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onSetMultiRegionConfirmVisible(false)
-                        onRunMacro(PanasonicDigaCatalog.Macros.MULTI_REGION_HACK)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaPurple),
-                ) {
-                    Text(DigaUiStrings.DIALOG_CONFIRM)
-                }
+        HacksConfirmDialog(
+            title = DigaUiStrings.DIALOG_MULTI_REGION_TITLE,
+            body = DigaUiStrings.DIALOG_MULTI_REGION_BODY,
+            confirmLabel = DigaUiStrings.DIALOG_CONFIRM,
+            confirmStyle = KeyStyle.Accent,
+            onConfirm = {
+                onSetMultiRegionConfirmVisible(false)
+                onRunMacro(PanasonicDigaCatalog.Macros.MULTI_REGION_HACK)
             },
-            dismissButton = {
-                TextButton(onClick = { onSetMultiRegionConfirmVisible(false) }) {
-                    Text(DigaUiStrings.DIALOG_CANCEL)
-                }
-            },
+            onDismiss = { onSetMultiRegionConfirmVisible(false) },
         )
     }
 
     // Confirmation Modal: Factory Reset
     if (showResetConfirm) {
-        AlertDialog(
-            onDismissRequest = { onSetResetConfirmVisible(false) },
-            title = { Text(DigaUiStrings.DIALOG_RESET_TITLE, color = DigaRed) },
-            text = { Text(DigaUiStrings.DIALOG_RESET_BODY) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onSetResetConfirmVisible(false)
-                        onRunMacro(PanasonicDigaCatalog.Macros.FACTORY_RESET)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = DigaRed),
-                ) {
-                    Text(DigaUiStrings.DIALOG_EXECUTE_RESET)
-                }
+        HacksConfirmDialog(
+            title = DigaUiStrings.DIALOG_RESET_TITLE,
+            body = DigaUiStrings.DIALOG_RESET_BODY,
+            confirmLabel = DigaUiStrings.DIALOG_EXECUTE_RESET,
+            confirmStyle = KeyStyle.Danger,
+            titleColor = KeyStyle.Danger.headerAccent(),
+            onConfirm = {
+                onSetResetConfirmVisible(false)
+                onRunMacro(PanasonicDigaCatalog.Macros.FACTORY_RESET)
             },
-            dismissButton = {
-                TextButton(onClick = { onSetResetConfirmVisible(false) }) {
-                    Text(DigaUiStrings.DIALOG_CANCEL)
-                }
-            },
+            onDismiss = { onSetResetConfirmVisible(false) },
         )
     }
+}
+
+/**
+ * Themed confirmation dialog shared by every hack: scrollable body, 48 dp minimum touch targets
+ * and a confirm label tinted with the accent of the action being confirmed.
+ */
+@Composable
+private fun HacksConfirmDialog(
+    title: String,
+    body: String,
+    confirmLabel: String,
+    confirmStyle: KeyStyle,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    titleColor: Color = DigaTextPrimary,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DigaSurface,
+        titleContentColor = titleColor,
+        textContentColor = DigaTextSecondary,
+        title = { Text(title) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(body)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.heightIn(min = DigaUiDimensions.HeightActionCardButton),
+            ) {
+                Text(
+                    text = confirmLabel,
+                    color = confirmStyle.headerAccent(),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = DigaUiDimensions.HeightActionCardButton),
+            ) {
+                Text(text = DigaUiStrings.DIALOG_CANCEL, color = DigaTextSecondary)
+            }
+        },
+    )
 }

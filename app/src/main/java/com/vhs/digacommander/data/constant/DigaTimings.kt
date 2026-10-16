@@ -35,4 +35,19 @@ object DigaTimings {
     const val KASEIKYO_DATA_BIT_COUNT: Int = 48
     const val PRONTO_HEADER_WORD_COUNT: Int = 4
     const val PRONTO_TOTAL_WORD_COUNT: Int = 104
+
+    // Unit conversion & hardware register safety limits
+    const val MICROS_PER_SECOND: Long = 1_000_000L
+    const val MAX_UINT16_VALUE: Int = 0xFFFF
+    const val MAX_HARDWARE_TRAIL_SPACE_US: Int = 45_000
+    const val MAX_AOSP_XMIT_TIME_US: Int = 1_900_000
+
+    // Frame repetition (reliability on weak emitters)
+    const val DEFAULT_FRAME_REPEAT: Int = 1
+    const val MAX_FRAME_REPEAT: Int = 3
+
+    // Camera-visible diagnostic beacon (~4.5 s of continuous frames)
+    const val BEACON_FRAME_COUNT: Int = 30
+    const val BEACON_FRAME_INTERVAL_MS: Long = 150L
+    const val BEACON_COMMAND_CODE: Int = 0x55
 }
