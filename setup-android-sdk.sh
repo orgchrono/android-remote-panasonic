@@ -32,14 +32,14 @@ CMDLINE_DIR="$SDK_DIR/cmdline-tools/latest"
 if [ ! -f "$CMDLINE_DIR/bin/sdkmanager" ]; then
     echo "[*] Creating SDK directory: $SDK_DIR"
     mkdir -p "$SDK_DIR/cmdline-tools"
-    
+
     TEMP_ZIP="/tmp/cmdline-tools.zip"
     TEMP_EXTRACT="/tmp/cmdline-extract"
     rm -rf "$TEMP_ZIP" "$TEMP_EXTRACT"
-    
+
     echo "[*] Downloading command-line tools..."
     curl -L -o "$TEMP_ZIP" "$TOOLS_URL"
-    
+
     echo "[*] Extracting command-line tools..."
     mkdir -p "$TEMP_EXTRACT"
     unzip -q "$TEMP_ZIP" -d "$TEMP_EXTRACT"

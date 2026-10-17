@@ -33,10 +33,10 @@ set "CMDLINE_TOOLS_DIR=%SDK_DIR%\cmdline-tools\latest"
 if not exist "%CMDLINE_TOOLS_DIR%\bin\sdkmanager.bat" (
     echo [*] Creating SDK directories at: %SDK_DIR%
     if not exist "%SDK_DIR%\cmdline-tools" mkdir "%SDK_DIR%\cmdline-tools"
-    
+
     echo [*] Downloading Android Command-Line Tools...
     curl.exe -L -o "%TEMP%\cmdline-tools.zip" "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
-    
+
     echo [*] Extracting tools via tar...
     tar.exe -xf "%TEMP%\cmdline-tools.zip" -C "%SDK_DIR%\cmdline-tools"
     if exist "%SDK_DIR%\cmdline-tools\cmdline-tools" (
