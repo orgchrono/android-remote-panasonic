@@ -167,10 +167,9 @@ Panasonic DIGA recorders feature Renesas SuperH SH-4 microcontrollers with stric
 
 ## 🤖 CI/CD: Automated Pipeline (Pre-Commit, Linter, Build & Release)
 
-The repository features a complete, modular GitHub Actions CI/CD automation workflow ([`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)) and pre-commit configuration ([`.pre-commit-config.yaml`](.pre-commit-config.yaml)):
-* **Stage 1 (Quality Audit & Pre-Commit):** Validates syntax/hygiene with `pre-commit`, enforces Kotlin styling with KtLint (`./gradlew ktlintCheck`), runs Android Lint (`./gradlew lintDebug`), and executes JUnit unit tests (`./gradlew test`).
-* **Stage 2 (Build & Package APKs):** Compiles both **Release APK** (`./gradlew assembleRelease`) and **Debug APK** (`./gradlew assembleDebug`), calculates SHA-256 cryptographic checksums (`SHA256SUMS.txt`), and uploads them as workflow artifacts with a 30-day retention period.
-* **Stage 3 (GitHub Release):** Creating and pushing a version tag (e.g., `git tag v0.1.0 && git push origin v0.1.0`) or manually triggering the workflow with release enabled automatically creates an official **GitHub Release** containing both signed APKs, versioned binaries, and `SHA256SUMS.txt`.
+The repository follows industry-standard separation of concerns with two dedicated GitHub Actions workflows and local pre-commit hooks:
+* **CI Workflow ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):** Runs on pushes to `main` and Pull Requests. Executes pre-commit hygiene checks ([`.pre-commit-config.yaml`](.pre-commit-config.yaml)), KtLint style auditing (`./gradlew ktlintCheck`), Android Lint (`./gradlew lintDebug`), JUnit unit tests (`./gradlew test`), and verifies the debug build.
+* **Release Workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)):** Runs exclusively on release tags (e.g. `v0.1.0`). Compiles signed production APKs (`Panasonic-DIGA-Commander-v0.1.0.apk`), diagnostic debug APKs (`Panasonic-DIGA-Commander-v0.1.0-debug.apk`), generates cryptographic checksums (`SHA256SUMS.txt`), and publishes the official GitHub Release without duplicate artifacts.
 
 ---
 
