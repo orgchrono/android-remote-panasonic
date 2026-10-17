@@ -60,7 +60,7 @@ jobs:
           chmod +x ./gradlew
 
       - name: Run Pre-Commit Hooks
-        uses: pre-commit/action@v3.0.2
+        uses: pre-commit/action@v3.0.1
 
       - name: Run KtLint Code Style Audit
         run: ./gradlew ktlintCheck --stacktrace
