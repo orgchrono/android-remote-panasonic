@@ -61,13 +61,13 @@ fun RemoteTab(
                             ProfileSection(activeProfile, activeMode, onProfileSelected, onModeSelected)
                             SystemSection(onSendCommand)
                             NavigationSection(onSendCommand)
+                            RecordingSection(onSendCommand)
                         }
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
                         ) {
                             TransportSection(onSendCommand)
-                            RecordingSection(onSendCommand)
                             if (hasVcr) VcrSection(activeMode, onSendCommand)
                             EditingSection(onSendCommand)
                             KeypadSection(onSendCommand)
@@ -78,10 +78,10 @@ fun RemoteTab(
                         ProfileSection(activeProfile, activeMode, onProfileSelected, onModeSelected)
                         SystemSection(onSendCommand)
                         NavigationSection(onSendCommand)
+                        RecordingSection(onSendCommand)
                         TransportSection(onSendCommand)
                         if (hasVcr) VcrSection(activeMode, onSendCommand)
                         EditingSection(onSendCommand)
-                        RecordingSection(onSendCommand)
                         KeypadSection(onSendCommand)
                     }
                 }

@@ -1,14 +1,24 @@
 package com.vhs.digacommander.presentation.ui.tabs
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Eject
@@ -33,26 +43,55 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog.OBC
 import com.vhs.digacommander.data.model.DigaModelProfile
 import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import com.vhs.digacommander.presentation.theme.DigaAmber
+import com.vhs.digacommander.presentation.theme.DigaBlue
+import com.vhs.digacommander.presentation.theme.DigaBlueLight
+import com.vhs.digacommander.presentation.theme.DigaOutline
+import com.vhs.digacommander.presentation.theme.DigaSurfaceVariant
+import com.vhs.digacommander.presentation.theme.DigaTextPrimary
 import com.vhs.digacommander.presentation.ui.components.ChoiceRow
 import com.vhs.digacommander.presentation.ui.components.DigaCard
 import com.vhs.digacommander.presentation.ui.components.KeyStyle
 import com.vhs.digacommander.presentation.ui.components.RemoteKey
 import com.vhs.digacommander.presentation.ui.components.keyStyle
 import com.vhs.digacommander.presentation.ui.components.textColor
+import kotlin.math.atan2
+import kotlin.math.sqrt
 
 /** Callback signature shared by every key: telemetry label, Original Button Code, VCR deck flag. */
 typealias SendCommand = (label: String, command: Int, isVcr: Boolean) -> Unit
@@ -369,24 +408,64 @@ fun ProfileSection(
     onProfileSelected: (DigaModelProfile) -> Unit,
     onModeSelected: (RemoteMode) -> Unit,
 ) {
+    var profileMenuExpanded by remember { mutableStateOf(false) }
+
     DigaCard(
         title = DigaUiStrings.SECTION_PROFILE_MODE,
         trailing = {
-            Text(
-                text = "${DigaUiStrings.LABEL_ACTIVE_PREFIX}${activeMode.label}",
-                fontWeight = FontWeight.Bold,
-                fontSize = DigaUiDimensions.TextSizeVfdSub,
-                color = activeMode.textColor(),
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
+            ) {
+                Box {
+                    Row(
+                        modifier =
+                            Modifier
+                                .clickable { profileMenuExpanded = true }
+                                .padding(
+                                    horizontal = DigaUiDimensions.PaddingCompactH,
+                                    vertical = DigaUiDimensions.PaddingCompactV,
+                                ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingMicro),
+                    ) {
+                        Text(
+                            text = activeProfile.id,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = DigaUiDimensions.TextSizeVfdSub,
+                            color = DigaBlueLight,
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                            tint = DigaBlueLight,
+                            modifier = Modifier.size(DigaUiDimensions.SizeKeyIconCompact),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = profileMenuExpanded,
+                        onDismissRequest = { profileMenuExpanded = false },
+                    ) {
+                        DigaModelProfile.entries.forEach { profile ->
+                            DropdownMenuItem(
+                                text = { Text(profile.displayName) },
+                                onClick = {
+                                    onProfileSelected(profile)
+                                    profileMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "${DigaUiStrings.LABEL_ACTIVE_PREFIX}${activeMode.label}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = DigaUiDimensions.TextSizeVfdSub,
+                    color = activeMode.textColor(),
+                )
+            }
         },
     ) {
-        ChoiceRow(
-            options = DigaModelProfile.entries,
-            selected = activeProfile,
-            labelOf = { it.id },
-            onSelect = onProfileSelected,
-            height = DigaUiDimensions.HeightProfileButton,
-        )
         ChoiceRow(
             options = RemoteMode.entries,
             selected = activeMode,
@@ -414,34 +493,305 @@ fun NavigationSection(onSend: SendCommand) {
     }
 }
 
+private enum class TargetDpadSection {
+    NONE,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    OK,
+}
+
+@Composable
+fun CircularTargetDpad(
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
+    size: Dp = DigaUiDimensions.SizeTargetDpad,
+    okSize: Dp = DigaUiDimensions.SizeTargetOk,
+) {
+    val haptics = LocalHapticFeedback.current
+    var pressedSection by remember { mutableStateOf(TargetDpadSection.NONE) }
+    val density = LocalDensity.current
+
+    val okSizePx = with(density) { okSize.toPx() }
+    val gapPx = with(density) { 4.dp.toPx() }
+    val strokeWidthPx = with(density) { 1.5.dp.toPx() }
+
+    Box(
+        modifier =
+            modifier
+                .size(size)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+                        val radiusOuter = this.size.width / 2f
+                        val radiusOk = okSizePx / 2f
+
+                        fun resolveSection(pos: Offset): TargetDpadSection {
+                            val dx = pos.x - center.x
+                            val dy = pos.y - center.y
+                            val dist = sqrt(dx * dx + dy * dy)
+                            return when {
+                                dist <= radiusOk -> TargetDpadSection.OK
+                                dist <= radiusOuter -> {
+                                    val angle = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() + 360f) % 360f
+                                    when {
+                                        angle >= 315f || angle < 45f -> TargetDpadSection.RIGHT
+                                        angle in 45f..135f -> TargetDpadSection.DOWN
+                                        angle in 135f..225f -> TargetDpadSection.LEFT
+                                        else -> TargetDpadSection.UP
+                                    }
+                                }
+                                else -> TargetDpadSection.NONE
+                            }
+                        }
+
+                        var active = resolveSection(down.position)
+                        pressedSection = active
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull()
+                            if (change != null && change.pressed) {
+                                val current = resolveSection(change.position)
+                                if (current != active) {
+                                    active = current
+                                    pressedSection = current
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        if (active != TargetDpadSection.NONE) {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            when (active) {
+                                TargetDpadSection.UP -> onSend(DigaUiStrings.CMD_LABEL_UP, OBC.UP, false)
+                                TargetDpadSection.DOWN -> onSend(DigaUiStrings.CMD_LABEL_DOWN, OBC.DOWN, false)
+                                TargetDpadSection.LEFT -> onSend(DigaUiStrings.CMD_LABEL_LEFT, OBC.LEFT, false)
+                                TargetDpadSection.RIGHT -> onSend(DigaUiStrings.CMD_LABEL_RIGHT, OBC.RIGHT, false)
+                                TargetDpadSection.OK -> onSend(DigaUiStrings.CMD_LABEL_OK, OBC.ENTER_OK, false)
+                                TargetDpadSection.NONE -> {}
+                            }
+                        }
+                        pressedSection = TargetDpadSection.NONE
+                    }
+                },
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(this.size.width / 2f, this.size.height / 2f)
+            val radiusOuter = this.size.width / 2f
+            val radiusOk = okSizePx / 2f
+            val radiusInner = radiusOk + gapPx
+
+            // 4 Directional Sectors (Outer Ring) forming a circumscribed circle
+            val gapHalfAngle = 1.5f
+            val sweepAngle = 90f - (gapHalfAngle * 2f)
+
+            val sectors =
+                listOf(
+                    Triple(TargetDpadSection.RIGHT, -45f + gapHalfAngle, sweepAngle),
+                    Triple(TargetDpadSection.DOWN, 45f + gapHalfAngle, sweepAngle),
+                    Triple(TargetDpadSection.LEFT, 135f + gapHalfAngle, sweepAngle),
+                    Triple(TargetDpadSection.UP, 225f + gapHalfAngle, sweepAngle),
+                )
+
+            for ((section, startAngle, sweep) in sectors) {
+                val isPressed = pressedSection == section
+                val sectorPath =
+                    Path().apply {
+                        val outerRect = Rect(center.x - radiusOuter, center.y - radiusOuter, center.x + radiusOuter, center.y + radiusOuter)
+                        val innerRect = Rect(center.x - radiusInner, center.y - radiusInner, center.x + radiusInner, center.y + radiusInner)
+                        arcTo(outerRect, startAngle, sweep, forceMoveTo = true)
+                        arcTo(innerRect, startAngle + sweep, -sweep, forceMoveTo = false)
+                        close()
+                    }
+
+                val fillColor = if (isPressed) DigaBlue.copy(alpha = 0.6f) else DigaSurfaceVariant
+                drawPath(sectorPath, color = fillColor)
+                drawPath(
+                    sectorPath,
+                    color = if (isPressed) DigaBlueLight else DigaOutline,
+                    style = Stroke(width = strokeWidthPx),
+                )
+            }
+
+            // Center Circular OK Button
+            val isOkPressed = pressedSection == TargetDpadSection.OK
+            val okFillColor = if (isOkPressed) DigaBlueLight else DigaBlue
+            drawCircle(
+                color = okFillColor,
+                radius = radiusOk,
+                center = center,
+            )
+            drawCircle(
+                color = if (isOkPressed) Color.White else DigaOutline,
+                radius = radiusOk,
+                center = center,
+                style = Stroke(width = strokeWidthPx + 0.5f),
+            )
+        }
+
+        // Overlay Directional Icons
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowUp,
+            contentDescription = null,
+            tint = if (pressedSection == TargetDpadSection.UP) DigaBlueLight else DigaTextPrimary,
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 18.dp)
+                    .size(DigaUiDimensions.SizeKeyIcon),
+        )
+
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = null,
+            tint = if (pressedSection == TargetDpadSection.DOWN) DigaBlueLight else DigaTextPrimary,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 18.dp)
+                    .size(DigaUiDimensions.SizeKeyIcon),
+        )
+
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowLeft,
+            contentDescription = null,
+            tint = if (pressedSection == TargetDpadSection.LEFT) DigaBlueLight else DigaTextPrimary,
+            modifier =
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 18.dp)
+                    .size(DigaUiDimensions.SizeKeyIcon),
+        )
+
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = if (pressedSection == TargetDpadSection.RIGHT) DigaBlueLight else DigaTextPrimary,
+            modifier =
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 18.dp)
+                    .size(DigaUiDimensions.SizeKeyIcon),
+        )
+
+        // Center OK Text
+        Text(
+            text = DigaUiStrings.BTN_OK,
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = DigaUiDimensions.TextSizeDpadOk,
+            modifier = Modifier.align(Alignment.Center),
+        )
+
+        // Accessibility Semantic Overlays
+        Box(
+            modifier =
+                Modifier
+                    .size(okSize)
+                    .align(Alignment.Center)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = DigaUiStrings.BTN_OK
+                        onClick {
+                            onSend(DigaUiStrings.CMD_LABEL_OK, OBC.ENTER_OK, false)
+                            true
+                        }
+                    },
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(DigaUiDimensions.HeightMiniButton)
+                    .align(Alignment.TopCenter)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = DigaUiStrings.BTN_UP
+                        onClick {
+                            onSend(DigaUiStrings.CMD_LABEL_UP, OBC.UP, false)
+                            true
+                        }
+                    },
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(DigaUiDimensions.HeightMiniButton)
+                    .align(Alignment.BottomCenter)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = DigaUiStrings.BTN_DOWN
+                        onClick {
+                            onSend(DigaUiStrings.CMD_LABEL_DOWN, OBC.DOWN, false)
+                            true
+                        }
+                    },
+        )
+        Box(
+            modifier =
+                Modifier
+                    .width(DigaUiDimensions.HeightMiniButton)
+                    .fillMaxHeight()
+                    .align(Alignment.CenterStart)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = DigaUiStrings.BTN_LEFT
+                        onClick {
+                            onSend(DigaUiStrings.CMD_LABEL_LEFT, OBC.LEFT, false)
+                            true
+                        }
+                    },
+        )
+        Box(
+            modifier =
+                Modifier
+                    .width(DigaUiDimensions.HeightMiniButton)
+                    .fillMaxHeight()
+                    .align(Alignment.CenterEnd)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = DigaUiStrings.BTN_RIGHT
+                        onClick {
+                            onSend(DigaUiStrings.CMD_LABEL_RIGHT, OBC.RIGHT, false)
+                            true
+                        }
+                    },
+        )
+    }
+}
+
 @Composable
 private fun DPadCluster(onSend: SendCommand) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Left Flank: Volume controls (VOL + / VOL -)
+        // Left Flank: Volume controls (VOL + / VOL -) expanded to weight 1f to match navigation columns
         Column(
-            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingDpadFlankGap),
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RemoteKey(
                 label = DigaUiStrings.BTN_VOL_UP,
                 onClick = { onSend(DigaUiStrings.CMD_LABEL_VOL_UP, OBC.VOL_UP, false) },
                 modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadFlankButton,
-                        height = DigaUiDimensions.HeightDpadFlankButton,
-                    ),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(DigaUiDimensions.HeightFlankDpadButton),
                 icon = Icons.Filled.VolumeUp,
-                fontSize = DigaUiDimensions.TextSizeDpadFlank,
+                fontSize = DigaUiDimensions.TextSizeButtonCompact,
                 shape =
                     RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadFlankOuter,
-                        topEnd = DigaUiDimensions.RadiusDpadFlankOuter,
-                        bottomStart = DigaUiDimensions.RadiusDpadFlankInner,
-                        bottomEnd = DigaUiDimensions.RadiusDpadFlankInner,
+                        topStart = DigaUiDimensions.RadiusTargetFlankOuter,
+                        topEnd = DigaUiDimensions.RadiusTargetFlankOuter,
+                        bottomStart = DigaUiDimensions.RadiusTargetFlankInner,
+                        bottomEnd = DigaUiDimensions.RadiusTargetFlankInner,
                     ),
                 contentPadding =
                     PaddingValues(
@@ -454,18 +804,17 @@ private fun DPadCluster(onSend: SendCommand) {
                 label = DigaUiStrings.BTN_VOL_DOWN,
                 onClick = { onSend(DigaUiStrings.CMD_LABEL_VOL_DOWN, OBC.VOL_DOWN, false) },
                 modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadFlankButton,
-                        height = DigaUiDimensions.HeightDpadFlankButton,
-                    ),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(DigaUiDimensions.HeightFlankDpadButton),
                 icon = Icons.Filled.VolumeDown,
-                fontSize = DigaUiDimensions.TextSizeDpadFlank,
+                fontSize = DigaUiDimensions.TextSizeButtonCompact,
                 shape =
                     RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadFlankInner,
-                        topEnd = DigaUiDimensions.RadiusDpadFlankInner,
-                        bottomStart = DigaUiDimensions.RadiusDpadFlankOuter,
-                        bottomEnd = DigaUiDimensions.RadiusDpadFlankOuter,
+                        topStart = DigaUiDimensions.RadiusTargetFlankInner,
+                        topEnd = DigaUiDimensions.RadiusTargetFlankInner,
+                        bottomStart = DigaUiDimensions.RadiusTargetFlankOuter,
+                        bottomEnd = DigaUiDimensions.RadiusTargetFlankOuter,
                     ),
                 contentPadding =
                     PaddingValues(
@@ -476,134 +825,35 @@ private fun DPadCluster(onSend: SendCommand) {
             )
         }
 
-        // Center: Circular Navigation Wheel (UP, LEFT, OK, RIGHT, DOWN)
-        Column(
-            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingDpadGap),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // Center: Circular Target D-Pad controller (weight 2f)
+        Box(
+            modifier = Modifier.weight(2f),
+            contentAlignment = Alignment.Center,
         ) {
-            // UP Arc
-            RemoteKey(
-                label = DigaUiStrings.BTN_UP,
-                onClick = { onSend(DigaUiStrings.CMD_LABEL_UP, OBC.UP, false) },
-                modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadUpDownWheel,
-                        height = DigaUiDimensions.HeightDpadUpDownWheel,
-                    ),
-                icon = Icons.Filled.KeyboardArrowUp,
-                iconOnly = true,
-                shape =
-                    RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadOuterArc,
-                        topEnd = DigaUiDimensions.RadiusDpadOuterArc,
-                        bottomStart = DigaUiDimensions.RadiusDpadInnerArc,
-                        bottomEnd = DigaUiDimensions.RadiusDpadInnerArc,
-                    ),
-                contentPadding = PaddingValues(DigaUiDimensions.PaddingZero),
-            )
-
-            // Middle Row: LEFT Arc, Circular OK, RIGHT Arc
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingDpadGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // LEFT Arc
-                RemoteKey(
-                    label = DigaUiStrings.BTN_LEFT,
-                    onClick = { onSend(DigaUiStrings.CMD_LABEL_LEFT, OBC.LEFT, false) },
-                    modifier =
-                        Modifier.size(
-                            width = DigaUiDimensions.WidthDpadLeftRightWheel,
-                            height = DigaUiDimensions.HeightDpadLeftRightWheel,
-                        ),
-                    icon = Icons.Filled.KeyboardArrowLeft,
-                    iconOnly = true,
-                    shape =
-                        RoundedCornerShape(
-                            topStart = DigaUiDimensions.RadiusDpadOuterArc,
-                            topEnd = DigaUiDimensions.RadiusDpadInnerArc,
-                            bottomStart = DigaUiDimensions.RadiusDpadOuterArc,
-                            bottomEnd = DigaUiDimensions.RadiusDpadInnerArc,
-                        ),
-                    contentPadding = PaddingValues(DigaUiDimensions.PaddingZero),
-                )
-
-                // Circular OK Button in the center
-                RemoteKey(
-                    label = DigaUiStrings.BTN_OK,
-                    onClick = { onSend(DigaUiStrings.CMD_LABEL_OK, OBC.ENTER_OK, false) },
-                    modifier = Modifier.size(DigaUiDimensions.SizeDpadOkWheel),
-                    style = KeyStyle.Primary,
-                    fontSize = DigaUiDimensions.TextSizeDpadOk,
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(DigaUiDimensions.PaddingZero),
-                )
-
-                // RIGHT Arc
-                RemoteKey(
-                    label = DigaUiStrings.BTN_RIGHT,
-                    onClick = { onSend(DigaUiStrings.CMD_LABEL_RIGHT, OBC.RIGHT, false) },
-                    modifier =
-                        Modifier.size(
-                            width = DigaUiDimensions.WidthDpadLeftRightWheel,
-                            height = DigaUiDimensions.HeightDpadLeftRightWheel,
-                        ),
-                    icon = Icons.Filled.KeyboardArrowRight,
-                    iconOnly = true,
-                    shape =
-                        RoundedCornerShape(
-                            topStart = DigaUiDimensions.RadiusDpadInnerArc,
-                            topEnd = DigaUiDimensions.RadiusDpadOuterArc,
-                            bottomStart = DigaUiDimensions.RadiusDpadInnerArc,
-                            bottomEnd = DigaUiDimensions.RadiusDpadOuterArc,
-                        ),
-                    contentPadding = PaddingValues(DigaUiDimensions.PaddingZero),
-                )
-            }
-
-            // DOWN Arc
-            RemoteKey(
-                label = DigaUiStrings.BTN_DOWN,
-                onClick = { onSend(DigaUiStrings.CMD_LABEL_DOWN, OBC.DOWN, false) },
-                modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadUpDownWheel,
-                        height = DigaUiDimensions.HeightDpadUpDownWheel,
-                    ),
-                icon = Icons.Filled.KeyboardArrowDown,
-                iconOnly = true,
-                shape =
-                    RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadInnerArc,
-                        topEnd = DigaUiDimensions.RadiusDpadInnerArc,
-                        bottomStart = DigaUiDimensions.RadiusDpadOuterArc,
-                        bottomEnd = DigaUiDimensions.RadiusDpadOuterArc,
-                    ),
-                contentPadding = PaddingValues(DigaUiDimensions.PaddingZero),
-            )
+            CircularTargetDpad(onSend = onSend)
         }
 
-        // Right Flank: Channel controls (CH + / CH -)
+        // Right Flank: Channel controls (CH + / CH -) expanded to weight 1f to match navigation columns
         Column(
-            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingDpadFlankGap),
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RemoteKey(
                 label = DigaUiStrings.BTN_CH_UP,
                 onClick = { onSend(DigaUiStrings.CMD_LABEL_CH_UP, OBC.CH_UP, false) },
                 modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadFlankButton,
-                        height = DigaUiDimensions.HeightDpadFlankButton,
-                    ),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(DigaUiDimensions.HeightFlankDpadButton),
                 icon = Icons.Filled.KeyboardArrowUp,
-                fontSize = DigaUiDimensions.TextSizeDpadFlank,
+                fontSize = DigaUiDimensions.TextSizeButtonCompact,
                 shape =
                     RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadFlankOuter,
-                        topEnd = DigaUiDimensions.RadiusDpadFlankOuter,
-                        bottomStart = DigaUiDimensions.RadiusDpadFlankInner,
-                        bottomEnd = DigaUiDimensions.RadiusDpadFlankInner,
+                        topStart = DigaUiDimensions.RadiusTargetFlankOuter,
+                        topEnd = DigaUiDimensions.RadiusTargetFlankOuter,
+                        bottomStart = DigaUiDimensions.RadiusTargetFlankInner,
+                        bottomEnd = DigaUiDimensions.RadiusTargetFlankInner,
                     ),
                 contentPadding =
                     PaddingValues(
@@ -616,18 +866,17 @@ private fun DPadCluster(onSend: SendCommand) {
                 label = DigaUiStrings.BTN_CH_DOWN,
                 onClick = { onSend(DigaUiStrings.CMD_LABEL_CH_DOWN, OBC.CH_DOWN, false) },
                 modifier =
-                    Modifier.size(
-                        width = DigaUiDimensions.WidthDpadFlankButton,
-                        height = DigaUiDimensions.HeightDpadFlankButton,
-                    ),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(DigaUiDimensions.HeightFlankDpadButton),
                 icon = Icons.Filled.KeyboardArrowDown,
-                fontSize = DigaUiDimensions.TextSizeDpadFlank,
+                fontSize = DigaUiDimensions.TextSizeButtonCompact,
                 shape =
                     RoundedCornerShape(
-                        topStart = DigaUiDimensions.RadiusDpadFlankInner,
-                        topEnd = DigaUiDimensions.RadiusDpadFlankInner,
-                        bottomStart = DigaUiDimensions.RadiusDpadFlankOuter,
-                        bottomEnd = DigaUiDimensions.RadiusDpadFlankOuter,
+                        topStart = DigaUiDimensions.RadiusTargetFlankInner,
+                        topEnd = DigaUiDimensions.RadiusTargetFlankInner,
+                        bottomStart = DigaUiDimensions.RadiusTargetFlankOuter,
+                        bottomEnd = DigaUiDimensions.RadiusTargetFlankOuter,
                     ),
                 contentPadding =
                     PaddingValues(

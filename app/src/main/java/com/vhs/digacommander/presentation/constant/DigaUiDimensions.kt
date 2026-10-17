@@ -59,6 +59,11 @@ object DigaUiDimensions {
     val HeightDpadLeftRightWheel: Dp = 68.dp
     val WidthDpadFlankButton: Dp = 60.dp
     val HeightDpadFlankButton: Dp = 76.dp
+    val SizeTargetDpad: Dp = 204.dp
+    val SizeTargetOk: Dp = 72.dp
+    val HeightFlankDpadButton: Dp = 98.dp
+    val RadiusTargetFlankOuter: Dp = 16.dp
+    val RadiusTargetFlankInner: Dp = 8.dp
     val SpacingDpadGap: Dp = 6.dp
     val SpacingDpadFlankGap: Dp = 8.dp
     val SizeKeyIcon: Dp = 24.dp
