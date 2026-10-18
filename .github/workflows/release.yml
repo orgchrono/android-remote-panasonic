@@ -75,6 +75,17 @@ jobs:
           echo "--- Checksums ---"
           cat release-assets/SHA256SUMS.txt
 
+      - name: Clean Stale Assets (If Re-releasing)
+        run: |
+          TAG_NAME="${{ steps.package-assets.outputs.tag_name }}"
+          EXISTING_ASSETS=$(gh release view "$TAG_NAME" --json assets -q '.assets[].name' 2>/dev/null || true)
+          for asset in $EXISTING_ASSETS; do
+            echo "Deleting stale asset before upload: $asset"
+            gh release delete-asset "$TAG_NAME" "$asset" -y || true
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
