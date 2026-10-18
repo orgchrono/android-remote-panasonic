@@ -7,18 +7,17 @@ import com.vhs.digacommander.data.model.IrTimingUnit
 import kotlin.math.abs
 
 /**
- * Pure functions adapting a nominal Panasonic DIGA Kaseikyo IR signal to concrete Samsung/Exynos
- * emitter drivers while preserving strict 37.010 kHz protocol timing at the physical IR LED.
- * Kept free of Android framework types so all hardware quirks are 100% unit-testable on the JVM.
+ * Pure functions adapting a nominal Panasonic DIGA Kaseikyo IR signal to platform emitter drivers
+ * while preserving strict 37.010 kHz protocol timing at the physical IR LED.
+ * Kept free of Android framework types so all hardware adaptations are 100% unit-testable on the JVM.
  */
 object IrSignalAdapter {
     /**
      * Checks whether [requestedHz] lies within the hardware's overall carrier span.
      *
-     * Samsung's `samsung_ir.h` HAL header publishes six discrete point entries (30, 33, 36, 38,
-     * 40, 56 kHz), yet both `ir_remote_con_mc96.c` (GT-N8000) and `ice4_fpga.c` (SM-T805M) accept
-     * any continuous frequency in that span (including Panasonic's exact 37010 Hz) and compute
-     * the hardware clock divider directly from `carrierFreq`.
+     * Certain HAL headers publish discrete point entries (e.g. 30, 33, 36, 38, 40, 56 kHz),
+     * yet the underlying hardware clock dividers accept any continuous frequency within the
+     * min..max span (including Panasonic's exact 37010 Hz).
      */
     fun isCarrierSupported(
         requestedHz: Int,
@@ -49,32 +48,50 @@ object IrSignalAdapter {
 
     /**
      * Selects the optimal default [IrTimingUnit] for `ConsumerIrManager.transmit` based on the
-     * detected Samsung Exynos board/model:
-     * - GT-N8000 / Exynos 4412 (`mc96` driver + LineageOS 18.1 non-dividing HAL): [IrTimingUnit.CARRIER_CYCLES]
-     * - SM-T805M / Exynos 5420 (`ice4_fpga` driver + dividing HAL): [IrTimingUnit.EXYNOS_FPGA]
-     * - All other devices: [IrTimingUnit.MICROSECONDS]
+     * detected kernel driver architecture and SoC platform family:
+     * - Cycle-register I2C MCU controllers: [IrTimingUnit.CARRIER_CYCLES]
+     * - Period-dividing FPGA controllers: [IrTimingUnit.PERIOD_SCALED]
+     * - Standard Android ConsumerIrManager implementations: [IrTimingUnit.MICROSECONDS]
      */
-    fun recommendedTimingUnit(device: IrDeviceInfo): IrTimingUnit {
-        val signature = "${device.model} ${device.hardware}".lowercase()
-        return when {
-            MC96_SIGNATURES.any { it in signature } -> IrTimingUnit.CARRIER_CYCLES
-            FPGA_SIGNATURES.any { it in signature } -> IrTimingUnit.EXYNOS_FPGA
-            else -> IrTimingUnit.MICROSECONDS
+    fun recommendedTimingUnit(
+        device: IrDeviceInfo,
+        hasSecIrNode: Boolean = false,
+        hasFpgaNode: Boolean = false,
+    ): IrTimingUnit {
+        if (isPeriodDividingFpgaDriver(device, hasFpgaNode)) {
+            return IrTimingUnit.PERIOD_SCALED
         }
+        if (isCycleRegisterMcuDriver(device, hasSecIrNode, hasFpgaNode)) {
+            return IrTimingUnit.CARRIER_CYCLES
+        }
+        return IrTimingUnit.MICROSECONDS
     }
 
     /**
-     * Returns true when the device uses the Samsung Exynos 5420 iCE40 FPGA kernel driver
-     * (`drivers/ice4_fpga/ice4_fpga.c`), which divides `/sys/class/sec/sec_ir/ir_send` values
-     * by `1_000_000 / ir_freq` in kernel space.
+     * Returns true when the platform uses an FPGA kernel driver (`ice4_fpga`) that divides
+     * sysfs/HAL pulse durations by `1_000_000 / ir_freq` in kernel space.
      */
-    fun isExynosFpgaDevice(
+    fun isPeriodDividingFpgaDriver(
         device: IrDeviceInfo,
-        hasIrdaTestNode: Boolean = false,
+        hasFpgaNode: Boolean = false,
     ): Boolean {
-        if (hasIrdaTestNode) return true
-        val signature = "${device.model} ${device.hardware}".lowercase()
-        return FPGA_SIGNATURES.any { it in signature }
+        if (hasFpgaNode) return true
+        val platform = device.hardware.lowercase()
+        return FPGA_SOC_PLATFORMS.any { it in platform }
+    }
+
+    /**
+     * Returns true when the platform uses a cycle-register I2C microcontroller driver (`mc96`)
+     * that expects raw carrier cycle counts rather than microsecond durations.
+     */
+    fun isCycleRegisterMcuDriver(
+        device: IrDeviceInfo,
+        hasSecIrNode: Boolean = false,
+        hasFpgaNode: Boolean = false,
+    ): Boolean {
+        if (hasSecIrNode && !hasFpgaNode && !isPeriodDividingFpgaDriver(device, false)) return true
+        val platform = device.hardware.lowercase()
+        return CYCLE_MCU_SOC_PLATFORMS.any { it in platform }
     }
 
     /**
@@ -83,11 +100,11 @@ object IrSignalAdapter {
      *   only the final trailing LED-off quiet gap at [DigaTimings.MAX_HARDWARE_TRAIL_SPACE_US]
      *   (45 000 us) so 16-bit `uint16_t` driver registers (max 65 535) never overflow.
      * - [IrTimingUnit.CARRIER_CYCLES]: converts each interval into exact carrier cycles
-     *   (128, 64, 16, 48 cycles at 37.01 kHz) for Samsung `ir_remote_con_mc96` (GT-N8000).
-     * - [IrTimingUnit.EXYNOS_FPGA]: pre-scales each microsecond interval by `1_000_000 / carrierHz`
+     *   (128, 64, 16, 48 cycles at 37.01 kHz) for cycle-register IR controllers.
+     * - [IrTimingUnit.PERIOD_SCALED]: pre-scales each microsecond interval by `1_000_000 / carrierHz`
      *   (27x at 37.01 kHz) while keeping total frame sum within [DigaTimings.MAX_AOSP_XMIT_TIME_US],
-     *   cancelling the double-division in `ConsumerIr.cpp` + `ice4_fpga.c` (SM-T805M) so the FPGA
-     *   emits exact 128, 64, 16, 48 DIGA cycles.
+     *   cancelling double-division across HAL and kernel FPGA so the emitter outputs exact
+     *   128, 64, 16, 48 DIGA cycles.
      */
     fun encodePattern(
         patternMicroseconds: IntArray,
@@ -117,7 +134,7 @@ object IrSignalAdapter {
                     cycles.toInt().coerceIn(1, DigaTimings.MAX_UINT16_VALUE)
                 }
 
-            IrTimingUnit.EXYNOS_FPGA -> {
+            IrTimingUnit.PERIOD_SCALED -> {
                 val factor = (DigaTimings.MICROS_PER_SECOND / safeCarrier).toInt().coerceAtLeast(1)
                 val out = IntArray(patternMicroseconds.size)
                 var runningSum = 0L
@@ -137,11 +154,11 @@ object IrSignalAdapter {
     }
 
     /**
-     * Formats a comma-separated payload for direct writes to `/sys/class/sec/sec_ir/ir_send`
-     * or Samsung's legacy `irda.write_irsend(String)` service:
-     * - `ir_remote_con_mc96.c` (GT-N8000, [expectsCyclesInSysfs] = true) expects carrier cycles.
-     * - `ice4_fpga.c` (SM-T805M, [expectsCyclesInSysfs] = false) divides by `1_000_000 / freq` in
-     *   the kernel, so it expects microseconds directly.
+     * Formats a comma-separated payload for direct writes to sysfs `ir_send` nodes
+     * or legacy vendor IR system services:
+     * - Cycle-register MCU drivers ([expectsCyclesInSysfs] = true) expect carrier cycles.
+     * - Period-dividing FPGA drivers ([expectsCyclesInSysfs] = false) divide by `1_000_000 / freq`
+     *   in the kernel, so they expect microseconds directly.
      */
     fun formatSysfsPayload(
         patternMicroseconds: IntArray,
@@ -158,34 +175,20 @@ object IrSignalAdapter {
         return sb.toString()
     }
 
-    private val MC96_SIGNATURES =
+    /** SoC board platform identifiers using cycle-register I2C IR microcontrollers. */
+    private val CYCLE_MCU_SOC_PLATFORMS =
         listOf(
-            "n8000",
-            "n8010",
-            "n8013",
-            "n8020",
-            "p4note",
-            "smdk4x12",
-            "smdk4412",
-            "exynos4412",
-            "p3100",
-            "p5100",
-            "note 10.1",
+            "4x12",
+            "4412",
+            "4210",
         )
 
-    private val FPGA_SIGNATURES =
+    /** SoC board platform identifiers using period-dividing iCE40 FPGA IR controllers. */
+    private val FPGA_SOC_PLATFORMS =
         listOf(
-            "t805",
-            "t800",
-            "t705",
-            "t700",
-            "p600",
-            "p605",
-            "p900",
-            "p905",
-            "exynos5420",
-            "universal5420",
-            "chagall",
-            "klimt",
+            "5420",
+            "5422",
+            "5430",
+            "5433",
         )
 }

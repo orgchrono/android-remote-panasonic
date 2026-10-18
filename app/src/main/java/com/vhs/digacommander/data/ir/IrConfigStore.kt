@@ -6,7 +6,7 @@ import com.vhs.digacommander.data.model.IrTimingUnit
 import com.vhs.digacommander.data.model.IrTransmitConfig
 
 /**
- * Persistence port for [IrTransmitConfig] so a calibrated Samsung/Exynos setup survives restarts.
+ * Persistence port for [IrTransmitConfig] so a calibrated infrared setup survives restarts.
  */
 interface IrConfigStore {
     fun load(): IrTransmitConfig
@@ -39,10 +39,10 @@ class SharedPrefsIrConfigStore(
     override fun load(): IrTransmitConfig {
         val savedUnitName = prefs.getString(KEY_TIMING_UNIT_V2, null)
         val unit =
-            if (savedUnitName != null) {
-                runCatching { IrTimingUnit.valueOf(savedUnitName) }.getOrDefault(fallbackConfig.timingUnit)
-            } else {
-                fallbackConfig.timingUnit
+            when (savedUnitName) {
+                null -> fallbackConfig.timingUnit
+                LEGACY_FPGA_UNIT_NAME -> IrTimingUnit.PERIOD_SCALED
+                else -> runCatching { IrTimingUnit.valueOf(savedUnitName) }.getOrDefault(fallbackConfig.timingUnit)
             }
         val repeat =
             prefs
@@ -63,5 +63,6 @@ class SharedPrefsIrConfigStore(
         const val PREFS_NAME = "diga_ir_config"
         const val KEY_TIMING_UNIT_V2 = "timing_unit_v2"
         const val KEY_REPEAT_COUNT = "repeat_count"
+        const val LEGACY_FPGA_UNIT_NAME = "EXYNOS_FPGA"
     }
 }

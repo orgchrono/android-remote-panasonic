@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -41,8 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.model.MacroExecutionState
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
@@ -90,114 +91,118 @@ fun DigaMainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tabs = DigaTab.entries
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= DigaUiDimensions.BreakpointWide
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val isWide = maxWidth >= DigaUiDimensions.BreakpointWide
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = DigaDarkBackground,
+        bottomBar = {
+            if (!isWide) {
+                NavigationBar(containerColor = DigaSurface) {
+                    tabs.forEachIndexed { index, tab ->
+                        NavigationBarItem(
+                            selected = uiState.selectedTabIndex == index,
+                            onClick = { viewModel.onTabSelected(index) },
+                            label = { Text(tab.label, maxLines = 1, fontSize = DigaUiDimensions.TextSizeVfdStatus) },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            colors = navigationItemColors(),
+                        )
+                    }
+                }
+            }
+        },
+    ) { innerPadding ->
+        Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            if (isWide) {
+                NavigationRail(
+                    containerColor = DigaSurface,
+                    modifier = Modifier.widthIn(min = DigaUiDimensions.WidthNavigationRail),
+                ) {
+                    Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
+                    tabs.forEachIndexed { index, tab ->
+                        NavigationRailItem(
+                            selected = uiState.selectedTabIndex == index,
+                            onClick = { viewModel.onTabSelected(index) },
+                            label = { Text(tab.label, maxLines = 1, fontSize = DigaUiDimensions.TextSizeVfdStatus) },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            colors = railItemColors(),
+                        )
+                    }
+                }
+            }
 
-        Scaffold(
-            containerColor = DigaDarkBackground,
-            bottomBar = {
-                if (!isWide) {
-                    NavigationBar(containerColor = DigaSurface) {
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationBarItem(
-                                selected = uiState.selectedTabIndex == index,
-                                onClick = { viewModel.onTabSelected(index) },
-                                label = { Text(tab.label, maxLines = 1, fontSize = DigaUiDimensions.TextSizeVfdStatus) },
-                                icon = { Icon(tab.icon, contentDescription = null) },
-                                colors = navigationItemColors(),
-                            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Single-line Fluorescent VFD Top Bar (centered, width-capped on tablets)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    Column(modifier = Modifier.widthIn(max = DigaUiDimensions.MaxContentWidth)) {
+                        val deckBadge =
+                            if (uiState.isVcrDeck) {
+                                DigaUiStrings.BADGE_DECK_VCR
+                            } else {
+                                DigaUiStrings.BADGE_DECK_DVD
+                            }
+                        VfdDisplay(
+                            mainText = uiState.vfdMainText,
+                            subText = uiState.vfdSubText,
+                            irStatusText = uiState.irStatusText,
+                            irLinkStatus = uiState.irLinkStatus,
+                            badgeText = "$deckBadge${DigaUiStrings.VFD_BADGE_SEPARATOR}${uiState.activeMode.label}",
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = DigaUiDimensions.PaddingHorizontalDefault,
+                                    vertical = DigaUiDimensions.PaddingCompactV,
+                                ),
+                        )
+                        if (uiState.irLinkStatus == IrLinkStatus.NO_HARDWARE &&
+                            uiState.selectedTabIndex != DigaTab.IR_LINK.ordinal
+                        ) {
+                            NoIrBanner(onClick = { viewModel.onTabSelected(DigaTab.IR_LINK.ordinal) })
+                        }
+                        val macro = uiState.macroState
+                        if (macro is MacroExecutionState.Running) {
+                            MacroProgressBanner(macro, onAbort = viewModel::cancelMacro)
                         }
                     }
                 }
-            },
-        ) { innerPadding ->
-            Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                if (isWide) {
-                    NavigationRail(
-                        containerColor = DigaSurface,
-                        modifier = Modifier.widthIn(min = DigaUiDimensions.WidthNavigationRail),
-                    ) {
-                        Spacer(modifier = Modifier.height(DigaUiDimensions.SpacingButtons))
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationRailItem(
-                                selected = uiState.selectedTabIndex == index,
-                                onClick = { viewModel.onTabSelected(index) },
-                                label = { Text(tab.label, maxLines = 1, fontSize = DigaUiDimensions.TextSizeVfdStatus) },
-                                icon = { Icon(tab.icon, contentDescription = null) },
-                                colors = railItemColors(),
-                            )
-                        }
-                    }
-                }
 
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Single-line Fluorescent VFD Top Bar (centered, width-capped on tablets)
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                        Column(modifier = Modifier.widthIn(max = DigaUiDimensions.MaxContentWidth)) {
-                            VfdDisplay(
-                                mainText = uiState.vfdMainText,
-                                subText = uiState.vfdSubText,
-                                irStatusText = uiState.irStatusText,
-                                irLinkStatus = uiState.irLinkStatus,
-                                badgeText = "${uiState.activeProfile.id}${DigaUiStrings.VFD_BADGE_SEPARATOR}${uiState.activeMode.label}",
-                                modifier =
-                                    Modifier.padding(
-                                        horizontal = DigaUiDimensions.PaddingHorizontalDefault,
-                                        vertical = DigaUiDimensions.PaddingCompactV,
-                                    ),
+                // Tab Content Body
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (tabs[uiState.selectedTabIndex.coerceIn(0, tabs.lastIndex)]) {
+                        DigaTab.REMOTE ->
+                            RemoteTab(
+                                isVcrDeck = uiState.isVcrDeck,
+                                activeMode = uiState.activeMode,
+                                onToggleVcrDeck = viewModel::onToggleVcrDeck,
+                                onModeSelected = viewModel::onModeSelected,
+                                onSendCommand = viewModel::sendCommand,
                             )
-                            if (uiState.irLinkStatus == IrLinkStatus.NO_HARDWARE &&
-                                uiState.selectedTabIndex != DigaTab.IR_LINK.ordinal
-                            ) {
-                                NoIrBanner(onClick = { viewModel.onTabSelected(DigaTab.IR_LINK.ordinal) })
-                            }
-                            val macro = uiState.macroState
-                            if (macro is MacroExecutionState.Running) {
-                                MacroProgressBanner(macro, onAbort = viewModel::cancelMacro)
-                            }
-                        }
-                    }
-
-                    // Tab Content Body
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        when (tabs[uiState.selectedTabIndex.coerceIn(0, tabs.lastIndex)]) {
-                            DigaTab.REMOTE ->
-                                RemoteTab(
-                                    activeProfile = uiState.activeProfile,
-                                    activeMode = uiState.activeMode,
-                                    onProfileSelected = viewModel::onProfileSelected,
-                                    onModeSelected = viewModel::onModeSelected,
-                                    onSendCommand = viewModel::sendCommand,
-                                )
-                            DigaTab.SERVICE ->
-                                ServiceTab(
-                                    onRunMacro = viewModel::runMacro,
-                                    onSendCommand = viewModel::sendCommand,
-                                )
-                            DigaTab.RECOVERY ->
-                                HacksTab(
-                                    activeMode = uiState.activeMode,
-                                    showMultiRegionConfirm = uiState.showMultiRegionConfirm,
-                                    showResetConfirm = uiState.showResetConfirm,
-                                    showAutoRestoreSet2Confirm = uiState.showAutoRestoreSet2Confirm,
-                                    showAutoRestoreSet3Confirm = uiState.showAutoRestoreSet3Confirm,
-                                    onSetMultiRegionConfirmVisible = viewModel::setMultiRegionConfirmVisible,
-                                    onSetResetConfirmVisible = viewModel::setResetConfirmVisible,
-                                    onSetAutoRestoreSet2ConfirmVisible = viewModel::setAutoRestoreSet2ConfirmVisible,
-                                    onSetAutoRestoreSet3ConfirmVisible = viewModel::setAutoRestoreSet3ConfirmVisible,
-                                    onModeSelected = viewModel::onModeSelected,
-                                    onRunMacro = viewModel::runMacro,
-                                )
-                            DigaTab.IR_LINK ->
-                                IrDiagnosticsTab(
-                                    state = uiState,
-                                    onTimingUnitSelected = viewModel::onTimingUnitSelected,
-                                    onRepeatSelected = viewModel::onRepeatCountSelected,
-                                    onBeaconToggled = viewModel::onBeaconToggled,
-                                    onRescan = viewModel::onIrRescanRequested,
-                                )
-                        }
+                        DigaTab.SERVICE ->
+                            ServiceTab(
+                                onRunMacro = viewModel::runMacro,
+                                onSendCommand = viewModel::sendCommand,
+                            )
+                        DigaTab.RECOVERY ->
+                            HacksTab(
+                                activeMode = uiState.activeMode,
+                                showMultiRegionConfirm = uiState.showMultiRegionConfirm,
+                                showResetConfirm = uiState.showResetConfirm,
+                                showAutoRestoreSet2Confirm = uiState.showAutoRestoreSet2Confirm,
+                                showAutoRestoreSet3Confirm = uiState.showAutoRestoreSet3Confirm,
+                                onSetMultiRegionConfirmVisible = viewModel::setMultiRegionConfirmVisible,
+                                onSetResetConfirmVisible = viewModel::setResetConfirmVisible,
+                                onSetAutoRestoreSet2ConfirmVisible = viewModel::setAutoRestoreSet2ConfirmVisible,
+                                onSetAutoRestoreSet3ConfirmVisible = viewModel::setAutoRestoreSet3ConfirmVisible,
+                                onModeSelected = viewModel::onModeSelected,
+                                onRunMacro = viewModel::runMacro,
+                            )
+                        DigaTab.IR_LINK ->
+                            IrDiagnosticsTab(
+                                state = uiState,
+                                onTimingUnitSelected = viewModel::onTimingUnitSelected,
+                                onRepeatSelected = viewModel::onRepeatCountSelected,
+                                onBeaconToggled = viewModel::onBeaconToggled,
+                                onRescan = viewModel::onIrRescanRequested,
+                            )
                     }
                 }
             }

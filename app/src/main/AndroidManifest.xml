@@ -5,7 +5,7 @@
     <!-- Required permission to transmit infrared signals -->
     <uses-permission android:name="android.permission.TRANSMIT_IR" />
 
-    <!-- Hardware feature for Consumer IR transmitter (Samsung Tab S / SM-T805M) -->
+    <!-- Hardware feature for Consumer IR transmitter -->
     <uses-feature
         android:name="android.hardware.consumerir"
         android:required="false" />

@@ -8,7 +8,6 @@ import com.vhs.digacommander.data.ir.InMemoryIrConfigStore
 import com.vhs.digacommander.data.ir.IrConfigStore
 import com.vhs.digacommander.data.ir.IrTransmitter
 import com.vhs.digacommander.data.model.DigaDevice
-import com.vhs.digacommander.data.model.DigaModelProfile
 import com.vhs.digacommander.data.model.IrCapabilities
 import com.vhs.digacommander.data.model.IrTimingUnit
 import com.vhs.digacommander.data.model.IrTransmitConfig
@@ -33,7 +32,7 @@ import kotlinx.coroutines.sync.withLock
  * Semantic health of the infrared link, so the UI never has to parse display text.
  */
 enum class IrLinkStatus {
-    /** No emitter exposed by the platform (emulator, missing HAL, tablet without IR LED). */
+    /** No emitter exposed by the platform (emulator, missing HAL, device without IR LED). */
     NO_HARDWARE,
 
     /** Emitter present, nominal carrier is emitted after being adapted to the driver ranges. */
@@ -47,7 +46,7 @@ enum class IrLinkStatus {
  * Immutable UI State representing the complete presentation model.
  */
 data class DigaUiState(
-    val activeProfile: DigaModelProfile = DigaModelProfile.DMR_EH55,
+    val isVcrDeck: Boolean = false,
     val activeMode: RemoteMode = RemoteMode.MODE_1,
     val selectedTabIndex: Int = 0,
     val vfdMainText: String = DigaUiStrings.VFD_READY,
@@ -145,8 +144,15 @@ class DigaViewModel(
         )
     }
 
-    fun onProfileSelected(profile: DigaModelProfile) {
-        _uiState.update { it.copy(activeProfile = profile) }
+    fun onToggleVcrDeck() {
+        _uiState.update { current ->
+            val nextVcr = !current.isVcrDeck
+            current.copy(
+                isVcrDeck = nextVcr,
+                vfdMainText = if (nextVcr) DigaUiStrings.VFD_DECK_VCR_MAIN else DigaUiStrings.VFD_DECK_DVD_MAIN,
+                vfdSubText = if (nextVcr) DigaUiStrings.VFD_DECK_VCR_SUB else DigaUiStrings.VFD_DECK_DVD_SUB,
+            )
+        }
     }
 
     fun onModeSelected(mode: RemoteMode) {
@@ -166,7 +172,7 @@ class DigaViewModel(
     fun sendCommand(
         label: String,
         command: Int,
-        isVcr: Boolean = false,
+        isVcr: Boolean = _uiState.value.isVcrDeck,
     ) {
         val mode = _uiState.value.activeMode
         val isTv =

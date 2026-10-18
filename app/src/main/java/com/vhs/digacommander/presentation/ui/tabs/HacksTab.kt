@@ -3,9 +3,12 @@ package com.vhs.digacommander.presentation.ui.tabs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -25,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
 import com.vhs.digacommander.data.model.MacroCommand
 import com.vhs.digacommander.data.model.RemoteMode
@@ -46,6 +51,8 @@ import com.vhs.digacommander.presentation.ui.components.keyStyle
  * Advanced Hacks, Multi-Region Unlock, and Automated Recovery tab.
  * Includes automated OSD NVRAM channel restoration (SET 2 / SET 3 -> SET 1),
  * DVD Region Free multi-region patch, Child Lock override, and TVGOS bypass.
+ *
+ * Uses a balanced two-column grid on tablets and a single scrolling column on phones.
  */
 @Composable
 fun HacksTab(
@@ -62,148 +69,80 @@ fun HacksTab(
     onRunMacro: (commands: List<MacroCommand>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= DigaUiDimensions.BreakpointWide
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
             modifier =
                 Modifier
                     .widthIn(max = DigaUiDimensions.MaxContentWidth)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
                     .padding(DigaUiDimensions.PaddingScreen),
             verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingScreenSections),
         ) {
-            // =====================================================================
-            // 1. AUTOMATED OSD RECOVERY: RESTORE SET 2 / SET 3 BACK TO SET 1
-            // =====================================================================
-            DigaCard(
-                title = DigaUiStrings.HACKS_AUTO_RECOVERY_TITLE,
-                icon = Icons.Filled.Restore,
-                accent = KeyStyle.Primary.headerAccent(),
-            ) {
-                DigaBodyText(text = DigaUiStrings.HACKS_AUTO_RECOVERY_DESC)
-
+            if (isWide) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
                 ) {
-                    RemoteKey(
-                        label = DigaUiStrings.HACKS_BTN_RESTORE_SET2,
-                        onClick = { onSetAutoRestoreSet2ConfirmVisible(true) },
-                        modifier = Modifier.weight(1f),
-                        style = KeyStyle.Success,
-                        height = DigaUiDimensions.HeightStandardButton,
-                    )
-
-                    RemoteKey(
-                        label = DigaUiStrings.HACKS_BTN_RESTORE_SET3,
-                        onClick = { onSetAutoRestoreSet3ConfirmVisible(true) },
-                        modifier = Modifier.weight(1f),
-                        style = KeyStyle.Warning,
-                        height = DigaUiDimensions.HeightStandardButton,
-                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingScreenSections),
+                    ) {
+                        AutoRecoveryCard(
+                            activeMode = activeMode,
+                            onSetAutoRestoreSet2ConfirmVisible = onSetAutoRestoreSet2ConfirmVisible,
+                            onSetAutoRestoreSet3ConfirmVisible = onSetAutoRestoreSet3ConfirmVisible,
+                            onModeSelected = onModeSelected,
+                        )
+                        ChildLockCard(onRunMacro = onRunMacro)
+                        FactoryResetCard(
+                            onSetResetConfirmVisible = onSetResetConfirmVisible,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingScreenSections),
+                    ) {
+                        MultiRegionCard(
+                            onSetMultiRegionConfirmVisible = onSetMultiRegionConfirmVisible,
+                            onRunMacro = onRunMacro,
+                        )
+                        TvgosBypassCard(
+                            onRunMacro = onRunMacro,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
-
-                HorizontalDivider(color = DigaOutline)
-
-                DigaBodyText(text = DigaUiStrings.HACKS_MANUAL_SYNC_LABEL)
-
-                ChoiceRow(
-                    options = RemoteMode.entries,
-                    selected = activeMode,
-                    labelOf = { it.label },
-                    onSelect = onModeSelected,
-                    modifier = Modifier.fillMaxWidth(),
-                    accentOf = { mode -> mode.keyStyle() },
+            } else {
+                AutoRecoveryCard(
+                    activeMode = activeMode,
+                    onSetAutoRestoreSet2ConfirmVisible = onSetAutoRestoreSet2ConfirmVisible,
+                    onSetAutoRestoreSet3ConfirmVisible = onSetAutoRestoreSet3ConfirmVisible,
+                    onModeSelected = onModeSelected,
                 )
-            }
-
-            // =====================================================================
-            // 2. MASTER HACK: MULTI-REGION (DVD REGION FREE - REGION 0)
-            // =====================================================================
-            DigaCard(
-                title = DigaUiStrings.HACKS_MULTI_REGION_TITLE,
-                icon = Icons.Filled.Public,
-                accent = KeyStyle.Accent.headerAccent(),
-            ) {
-                DigaBodyText(text = DigaUiStrings.HACKS_MULTI_REGION_DESC)
-
-                RemoteKey(
-                    label = DigaUiStrings.HACKS_MULTI_REGION_BTN,
-                    onClick = { onSetMultiRegionConfirmVisible(true) },
-                    modifier = Modifier.fillMaxWidth(),
-                    style = KeyStyle.Accent,
-                    height = DigaUiDimensions.HeightStandardButton,
+                MultiRegionCard(
+                    onSetMultiRegionConfirmVisible = onSetMultiRegionConfirmVisible,
+                    onRunMacro = onRunMacro,
                 )
-
-                RemoteKey(
-                    label = DigaUiStrings.HACKS_CHECK_REGION_BTN,
-                    onClick = {
-                        onRunMacro(PanasonicDigaCatalog.Macros.REGION_READOUT)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    style = KeyStyle.Neutral,
-                )
-            }
-
-            // =====================================================================
-            // 3. EMERGENCY FRONT PANEL LOCK OVERRIDE (CHILD LOCK / X-HOLD)
-            // =====================================================================
-            DigaCard(
-                title = DigaUiStrings.HACKS_CHILD_LOCK_TITLE,
-                icon = Icons.Filled.Lock,
-                accent = KeyStyle.Warning.headerAccent(),
-            ) {
-                DigaBodyText(text = DigaUiStrings.HACKS_CHILD_LOCK_DESC)
-
-                RemoteKey(
-                    label = DigaUiStrings.HACKS_CHILD_LOCK_BTN,
-                    onClick = {
-                        onRunMacro(PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    style = KeyStyle.Warning,
-                )
-            }
-
-            // =====================================================================
-            // 4. TVGOS EPG NIGHTLY SPIN-UP BYPASS (HDD LIFESPAN PROTECTION)
-            // =====================================================================
-            DigaCard(
-                title = DigaUiStrings.HACKS_TVGOS_TITLE,
-                icon = Icons.Filled.Schedule,
-                accent = KeyStyle.Success.headerAccent(),
-            ) {
-                DigaBodyText(text = DigaUiStrings.HACKS_TVGOS_DESC)
-
-                RemoteKey(
-                    label = DigaUiStrings.HACKS_TVGOS_BTN,
-                    onClick = {
-                        onRunMacro(PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    style = KeyStyle.Success,
-                )
-            }
-
-            // =====================================================================
-            // 5. FACTORY MASTER RESET / NVRAM RE-INITIALIZATION (99)
-            // =====================================================================
-            DigaCard(
-                title = DigaUiStrings.HACKS_RESET_TITLE,
-                icon = Icons.Filled.Warning,
-                accent = KeyStyle.Danger.headerAccent(),
-            ) {
-                DigaBodyText(text = DigaUiStrings.HACKS_RESET_DESC)
-
-                RemoteKey(
-                    label = DigaUiStrings.HACKS_RESET_BTN,
-                    onClick = { onSetResetConfirmVisible(true) },
-                    modifier = Modifier.fillMaxWidth(),
-                    style = KeyStyle.Danger,
-                )
+                ChildLockCard(onRunMacro = onRunMacro)
+                TvgosBypassCard(onRunMacro = onRunMacro)
+                FactoryResetCard(onSetResetConfirmVisible = onSetResetConfirmVisible)
             }
         }
     }
@@ -212,7 +151,6 @@ fun HacksTab(
     // MODAL DIALOGS
     // =========================================================================
 
-    // Confirmation Modal: Auto-Restore SET 2 -> SET 1
     if (showAutoRestoreSet2Confirm) {
         HacksConfirmDialog(
             title = DigaUiStrings.DIALOG_SET2_TITLE,
@@ -227,7 +165,6 @@ fun HacksTab(
         )
     }
 
-    // Confirmation Modal: Auto-Restore SET 3 -> SET 1
     if (showAutoRestoreSet3Confirm) {
         HacksConfirmDialog(
             title = DigaUiStrings.DIALOG_SET3_TITLE,
@@ -242,7 +179,6 @@ fun HacksTab(
         )
     }
 
-    // Confirmation Modal: Multi-Region Hack
     if (showMultiRegionConfirm) {
         HacksConfirmDialog(
             title = DigaUiStrings.DIALOG_MULTI_REGION_TITLE,
@@ -257,7 +193,6 @@ fun HacksTab(
         )
     }
 
-    // Confirmation Modal: Factory Reset
     if (showResetConfirm) {
         HacksConfirmDialog(
             title = DigaUiStrings.DIALOG_RESET_TITLE,
@@ -270,6 +205,155 @@ fun HacksTab(
                 onRunMacro(PanasonicDigaCatalog.Macros.FACTORY_RESET)
             },
             onDismiss = { onSetResetConfirmVisible(false) },
+        )
+    }
+}
+
+@Composable
+private fun AutoRecoveryCard(
+    activeMode: RemoteMode,
+    onSetAutoRestoreSet2ConfirmVisible: (Boolean) -> Unit,
+    onSetAutoRestoreSet3ConfirmVisible: (Boolean) -> Unit,
+    onModeSelected: (RemoteMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.HACKS_AUTO_RECOVERY_TITLE,
+        modifier = modifier,
+        icon = Icons.Filled.Restore,
+        accent = KeyStyle.Primary.headerAccent(),
+    ) {
+        DigaBodyText(text = DigaUiStrings.HACKS_AUTO_RECOVERY_DESC)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
+        ) {
+            RemoteKey(
+                label = DigaUiStrings.HACKS_BTN_RESTORE_SET2,
+                onClick = { onSetAutoRestoreSet2ConfirmVisible(true) },
+                modifier = Modifier.weight(1f),
+                style = KeyStyle.Success,
+                height = DigaUiDimensions.HeightStandardButton,
+            )
+
+            RemoteKey(
+                label = DigaUiStrings.HACKS_BTN_RESTORE_SET3,
+                onClick = { onSetAutoRestoreSet3ConfirmVisible(true) },
+                modifier = Modifier.weight(1f),
+                style = KeyStyle.Warning,
+                height = DigaUiDimensions.HeightStandardButton,
+            )
+        }
+
+        HorizontalDivider(color = DigaOutline)
+
+        DigaBodyText(text = DigaUiStrings.HACKS_MANUAL_SYNC_LABEL)
+
+        ChoiceRow(
+            options = RemoteMode.entries,
+            selected = activeMode,
+            labelOf = { it.label },
+            onSelect = onModeSelected,
+            modifier = Modifier.fillMaxWidth(),
+            accentOf = { mode -> mode.keyStyle() },
+        )
+    }
+}
+
+@Composable
+private fun MultiRegionCard(
+    onSetMultiRegionConfirmVisible: (Boolean) -> Unit,
+    onRunMacro: (commands: List<MacroCommand>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.HACKS_MULTI_REGION_TITLE,
+        modifier = modifier,
+        icon = Icons.Filled.Public,
+        accent = KeyStyle.Accent.headerAccent(),
+    ) {
+        DigaBodyText(text = DigaUiStrings.HACKS_MULTI_REGION_DESC)
+
+        RemoteKey(
+            label = DigaUiStrings.HACKS_MULTI_REGION_BTN,
+            onClick = { onSetMultiRegionConfirmVisible(true) },
+            modifier = Modifier.fillMaxWidth(),
+            style = KeyStyle.Accent,
+            height = DigaUiDimensions.HeightStandardButton,
+        )
+
+        RemoteKey(
+            label = DigaUiStrings.HACKS_CHECK_REGION_BTN,
+            onClick = { onRunMacro(PanasonicDigaCatalog.Macros.REGION_READOUT) },
+            modifier = Modifier.fillMaxWidth(),
+            style = KeyStyle.Neutral,
+        )
+    }
+}
+
+@Composable
+private fun ChildLockCard(
+    onRunMacro: (commands: List<MacroCommand>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.HACKS_CHILD_LOCK_TITLE,
+        modifier = modifier,
+        icon = Icons.Filled.Lock,
+        accent = KeyStyle.Warning.headerAccent(),
+    ) {
+        DigaBodyText(text = DigaUiStrings.HACKS_CHILD_LOCK_DESC)
+
+        RemoteKey(
+            label = DigaUiStrings.HACKS_CHILD_LOCK_BTN,
+            onClick = { onRunMacro(PanasonicDigaCatalog.Macros.CHILD_LOCK_UNLOCK) },
+            modifier = Modifier.fillMaxWidth(),
+            style = KeyStyle.Warning,
+        )
+    }
+}
+
+@Composable
+private fun TvgosBypassCard(
+    onRunMacro: (commands: List<MacroCommand>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.HACKS_TVGOS_TITLE,
+        modifier = modifier,
+        icon = Icons.Filled.Schedule,
+        accent = KeyStyle.Success.headerAccent(),
+    ) {
+        DigaBodyText(text = DigaUiStrings.HACKS_TVGOS_DESC)
+
+        RemoteKey(
+            label = DigaUiStrings.HACKS_TVGOS_BTN,
+            onClick = { onRunMacro(PanasonicDigaCatalog.Macros.TVGOS_DISABLE_ZIP) },
+            modifier = Modifier.fillMaxWidth(),
+            style = KeyStyle.Success,
+        )
+    }
+}
+
+@Composable
+private fun FactoryResetCard(
+    onSetResetConfirmVisible: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.HACKS_RESET_TITLE,
+        modifier = modifier,
+        icon = Icons.Filled.Warning,
+        accent = KeyStyle.Danger.headerAccent(),
+    ) {
+        DigaBodyText(text = DigaUiStrings.HACKS_RESET_DESC)
+
+        RemoteKey(
+            label = DigaUiStrings.HACKS_RESET_BTN,
+            onClick = { onSetResetConfirmVisible(true) },
+            modifier = Modifier.fillMaxWidth(),
+            style = KeyStyle.Danger,
         )
     }
 }

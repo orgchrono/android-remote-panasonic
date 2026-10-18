@@ -1,4 +1,4 @@
-﻿package com.vhs.digacommander
+package com.vhs.digacommander
 
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
 import com.vhs.digacommander.data.constant.DigaTimings
@@ -15,11 +15,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Pure-JVM tests for Samsung Exynos (`GT-N8000` MC96 & `SM-T805M` iCE40 FPGA) adaptation and
- * strict Panasonic DIGA Kaseikyo 37.010 kHz protocol fidelity.
+ * Pure-JVM tests for cross-platform IR hardware adaptation (standard microseconds,
+ * cycle-register I2C MCUs, and period-dividing FPGA drivers) with strict Panasonic DIGA
+ * Kaseikyo 37.010 kHz protocol fidelity.
  */
 class IrSignalAdapterTest {
-    private val samsungDiscreteRanges =
+    private val discreteSpanRanges =
         listOf(
             IrFrequencyRange(30000, 30000),
             IrFrequencyRange(33000, 33000),
@@ -40,9 +41,9 @@ class IrSignalAdapterTest {
     }
 
     @Test
-    fun samsungDiscreteTablePreservesExactDiga37010HzCarrier() {
-        assertTrue(IrSignalAdapter.isCarrierSupported(37010, samsungDiscreteRanges))
-        assertEquals(37010, IrSignalAdapter.resolveCarrier(37010, samsungDiscreteRanges))
+    fun discreteSpanTablePreservesExactDiga37010HzCarrier() {
+        assertTrue(IrSignalAdapter.isCarrierSupported(37010, discreteSpanRanges))
+        assertEquals(37010, IrSignalAdapter.resolveCarrier(37010, discreteSpanRanges))
     }
 
     @Test
@@ -76,9 +77,9 @@ class IrSignalAdapterTest {
     }
 
     @Test
-    fun exynosFpgaPatternCompensatesDoubleDivisionToExactDigaCycles() {
+    fun periodScaledPatternCompensatesDoubleDivisionToExactDigaCycles() {
         val fullFrame = KaseikyoProtocol.synthesizePulsePattern(DigaDevice.DVD_HDD.id, RemoteMode.MODE_1, PanasonicDigaCatalog.OBC.POWER)
-        val encoded = IrSignalAdapter.encodePattern(fullFrame, 37010, IrTimingUnit.EXYNOS_FPGA)
+        val encoded = IrSignalAdapter.encodePattern(fullFrame, 37010, IrTimingUnit.PERIOD_SCALED)
 
         // Total duration must stay under AOSP ConsumerIrService.MAX_XMIT_TIME (2_000_000)
         val totalSum = encoded.sumOf { it.toLong() }
@@ -87,7 +88,7 @@ class IrSignalAdapterTest {
             totalSum <= DigaTimings.MAX_AOSP_XMIT_TIME_US,
         )
 
-        // Simulate LineageOS ConsumerIr.cpp division (/ 27) followed by ice4_fpga.c division (/ 27)
+        // Simulate HAL division (/ 27) followed by kernel driver division (/ 27)
         val factor = 1_000_000 / 37010 // 27
         val afterHal = encoded.map { it / factor }
         val afterKernel = afterHal.map { it / factor }
@@ -105,17 +106,20 @@ class IrSignalAdapterTest {
     }
 
     @Test
-    fun hardwareDetectionSelectsCorrectModeForN8000AndT805M() {
-        val n8000 = IrDeviceInfo(manufacturer = "samsung", model = "GT-N8000", hardware = "smdk4x12", sdkInt = 30)
-        assertEquals(IrTimingUnit.CARRIER_CYCLES, IrSignalAdapter.recommendedTimingUnit(n8000))
+    fun driverArchitectureDetectionSelectsCorrectDefaultTimingUnit() {
+        val mcuPlatform = IrDeviceInfo(manufacturer = "generic", model = "tablet-mcu", hardware = "smdk4x12", sdkInt = 30)
+        assertEquals(IrTimingUnit.CARRIER_CYCLES, IrSignalAdapter.recommendedTimingUnit(mcuPlatform))
 
-        val t805m = IrDeviceInfo(manufacturer = "samsung", model = "SM-T805M", hardware = "universal5420", sdkInt = 23)
-        assertEquals(IrTimingUnit.EXYNOS_FPGA, IrSignalAdapter.recommendedTimingUnit(t805m))
+        val fpgaPlatform = IrDeviceInfo(manufacturer = "generic", model = "tablet-fpga", hardware = "universal5420", sdkInt = 23)
+        assertEquals(IrTimingUnit.PERIOD_SCALED, IrSignalAdapter.recommendedTimingUnit(fpgaPlatform))
 
-        val sysfsMc96 = IrSignalAdapter.formatSysfsPayload(intArrayOf(3459, 1729, 432), 37010, expectsCyclesInSysfs = true)
-        assertEquals("37010,128,64,16", sysfsMc96)
+        val standardPlatform = IrDeviceInfo(manufacturer = "generic", model = "phone-ir", hardware = "qcom", sdkInt = 34)
+        assertEquals(IrTimingUnit.MICROSECONDS, IrSignalAdapter.recommendedTimingUnit(standardPlatform))
 
-        val sysfsFpga = IrSignalAdapter.formatSysfsPayload(intArrayOf(3459, 1729, 432), 37010, expectsCyclesInSysfs = false)
-        assertEquals("37010,3459,1729,432", sysfsFpga)
+        val sysfsCycles = IrSignalAdapter.formatSysfsPayload(intArrayOf(3459, 1729, 432), 37010, expectsCyclesInSysfs = true)
+        assertEquals("37010,128,64,16", sysfsCycles)
+
+        val sysfsUs = IrSignalAdapter.formatSysfsPayload(intArrayOf(3459, 1729, 432), 37010, expectsCyclesInSysfs = false)
+        assertEquals("37010,3459,1729,432", sysfsUs)
     }
 }

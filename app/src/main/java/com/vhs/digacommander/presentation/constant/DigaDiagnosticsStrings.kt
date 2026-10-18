@@ -32,45 +32,44 @@ object DigaDiagnosticsStrings {
     // Verdicts
     const val VERDICT_NO_HARDWARE_TITLE: String = "No IR emitter detected"
     const val VERDICT_NO_HARDWARE_BODY: String =
-        "Android reports that this device has no usable infrared emitter, so the app cannot send anything.\n\n" +
-            "- Stock Samsung firmware (e.g. SM-T805M): the IR LED or its driver is faulty or disabled.\n" +
-            "- Custom ROM (e.g. LineageOS on GT-N8000): the ROM must ship the consumer IR HAL and the " +
-            "feature flag android.hardware.consumerir. Flash a build that lists 'consumerir' as working.\n" +
-            "- Emulators and phones without an IR LED always show this message."
+        "Android reports that this device has no usable infrared emitter, so the app cannot transmit signals.\n\n" +
+            "- Verify that your smartphone or tablet has a built-in hardware Consumer IR blaster.\n" +
+            "- On custom firmware, ensure the Consumer IR HAL (android.hardware.consumerir) or kernel IR sysfs node is enabled.\n" +
+            "- Emulators and devices without an infrared LED always show this message."
     const val VERDICT_ADAPTED_TITLE: String = "Emitter ready (carrier adapted)"
     const val VERDICT_ADAPTED_BODY: String =
-        "The driver does not accept Panasonic's exact 37.01 kHz carrier, so the app emits the nearest " +
-            "supported frequency. Recorders normally tolerate this small deviation; keep the tablet close " +
-            "(under 2 m) and aimed at the recorder."
+        "The driver does not report Panasonic's exact 37.01 kHz carrier natively, so the app emits the nearest " +
+            "supported frequency. Recorders normally tolerate this small deviation; keep the device within " +
+            "2 meters and aimed directly at the recorder's sensor."
     const val VERDICT_ONLINE_TITLE: String = "Emitter ready"
     const val VERDICT_ONLINE_BODY: String =
-        "The driver accepts the Panasonic carrier natively. Continue with the camera test to confirm the " +
-            "LED really fires."
+        "The driver accepts the Panasonic 37.01 kHz Kaseikyo carrier natively. Continue with the camera test to " +
+            "confirm physical LED emission."
 
     // Camera test
     const val CAMERA_STEPS: String =
-        "1. Open the camera app on another phone and use the FRONT camera (it usually has no IR filter).\n" +
-            "2. Aim it at the tablet's IR window, normally on the top edge. Dim the room lights.\n" +
-            "3. Press the button below. A steady violet flicker on the camera screen means the LED fires.\n" +
-            "4. No light at all? The problem is the emitter or ROM, not the timing: see the status above."
+        "1. Open the camera app on another device and select the FRONT camera (which normally lacks an IR cut filter).\n" +
+            "2. Aim it directly at this device's IR window (typically on the top or side edge) in a dimly lit room.\n" +
+            "3. Press the button below. A steady violet flicker on the camera viewfinder confirms the IR LED is firing.\n" +
+            "4. If no light appears, check the hardware emitter status above."
     const val BTN_BEACON_START: String = "START IR BEACON (4 s)"
     const val BTN_BEACON_STOP: String = "STOP BEACON"
-    const val BEACON_NOTE: String = "The beacon is addressed to an unused device id, so no recorder or TV reacts to it."
+    const val BEACON_NOTE: String = "The beacon is addressed to an unassigned device ID (0xFE), so no recorder or TV reacts to it."
 
     // Calibration
     const val CALIBRATION_INTRO: String =
         "All modes emit strict Panasonic DIGA Kaseikyo pulses (37.01 kHz, 128/64/16/48 cycles) at the physical LED. " +
-            "Select the driver mode matching your Samsung Exynos tablet:"
-    const val LABEL_TIMING_UNIT: String = "Samsung Exynos IR driver mode"
+            "The optimal encoding mode is auto-detected from the hardware driver and can be overridden below:"
+    const val LABEL_TIMING_UNIT: String = "Pulse timing encoding mode"
     const val UNIT_MICROSECONDS: String = "Standard (us)"
-    const val UNIT_CYCLES: String = "MC96 Cycles (N8000)"
-    const val UNIT_EXYNOS_FPGA: String = "FPGA 27x (T805M)"
+    const val UNIT_CYCLES: String = "Carrier Cycles"
+    const val UNIT_PERIOD_SCALED: String = "Period Scaled"
     const val HINT_TIMING_UNIT: String =
-        "- Standard (us): AOSP ConsumerIrManager contract. Use on non-Samsung devices or standard ROMs.\n" +
-            "- MC96 Cycles (N8000): For Galaxy Note 10.1 (GT-N8000) on LineageOS 18.1 / KitKat (128, 64, 16, 48 cycles).\n" +
-            "- FPGA 27x (T805M): For Galaxy Tab S (SM-T805M) to compensate for HAL + ice4_fpga.c double-division."
+        "- Standard (us): Standard Android ConsumerIrManager contract in microseconds (most smartphones and tablets).\n" +
+            "- Carrier Cycles: Encodes intervals as carrier wave cycle counts (128, 64, 16, 48) for cycle-register I2C controllers.\n" +
+            "- Period Scaled: Pre-scales intervals by the carrier period (27x at 37.01 kHz) to compensate for double-dividing HAL + FPGA drivers."
     const val LABEL_REPEAT: String = "Frames per key press"
     const val REPEAT_SUFFIX: String = "x"
-    const val HINT_REPEAT: String = "Send each frame more than once if the recorder only reacts to some presses or from very close."
+    const val HINT_REPEAT: String = "Send each frame more than once if the recorder only reacts intermittently or from close range."
     const val BTN_RESCAN: String = "RE-SCAN EMITTER"
 }

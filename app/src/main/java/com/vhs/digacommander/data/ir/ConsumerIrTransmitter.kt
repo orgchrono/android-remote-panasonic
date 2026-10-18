@@ -28,9 +28,8 @@ class IrUnavailableException(
 }
 
 /**
- * Direct hardware transmitter interfacing with Android's [ConsumerIrManager], Samsung's legacy
- * `irda` system service, and the Samsung Exynos `/sys/class/sec/sec_ir/ir_send` kernel node
- * (`ir_remote_con_mc96` on GT-N8000 / Exynos 4412 and `ice4_fpga` on SM-T805M / Exynos 5420).
+ * Hardware infrared transmitter interfacing with Android's standard [ConsumerIrManager],
+ * legacy vendor IR system services, and kernel sysfs infrared transmitter nodes.
  */
 class ConsumerIrTransmitter(
     context: Context,
@@ -46,12 +45,12 @@ class ConsumerIrTransmitter(
     @SuppressLint("WrongConstant")
     private val irdaService: Any? =
         runCatching {
-            appContext.getSystemService(SAMSUNG_IRDA_SERVICE)
+            appContext.getSystemService(LEGACY_IRDA_SERVICE)
         }.getOrNull()
 
     private val irdaWriteMethod: Method? =
         runCatching {
-            irdaService?.javaClass?.getMethod(SAMSUNG_IRDA_WRITE_METHOD, String::class.java)
+            irdaService?.javaClass?.getMethod(LEGACY_IRDA_WRITE_METHOD, String::class.java)
         }.getOrNull()
 
     private val sysfsIrSend = File(SYSFS_SEC_IR_SEND)
@@ -95,7 +94,7 @@ class ConsumerIrTransmitter(
             val settings = config
             val carrier = resolveCarrier(signal.carrierFrequency)
             val deviceInfo = readDeviceInfo()
-            val isFpga = IrSignalAdapter.isExynosFpgaDevice(deviceInfo, sysfsIrdaTest.exists())
+            val isFpga = IrSignalAdapter.isPeriodDividingFpgaDriver(deviceInfo, sysfsIrdaTest.exists())
             val sysfsPayload =
                 IrSignalAdapter.formatSysfsPayload(
                     patternMicroseconds = signal.patternMicroseconds,
@@ -138,24 +137,24 @@ class ConsumerIrTransmitter(
         encodedPattern: IntArray,
         sysfsPayload: String,
     ) {
-        // 1. Direct sysfs write to /sys/class/sec/sec_ir/ir_send if accessible.
+        // 1. Direct sysfs write when the kernel exposes a writable IR transmitter node.
         if (tryWriteSysfsDirect(sysfsPayload)) return
 
-        // 2. On rooted devices (e.g. LineageOS 18.1 on GT-N8000 where /sys/class/sec/sec_ir/ir_send
-        //    is left 0664/0660), perform a one-time best-effort permission unlock.
+        // 2. When the kernel sysfs node exists with restricted group permissions, perform a
+        //    one-time best-effort permission unlock if privileged shell access is available.
         if (sysfsIrSend.exists() && !sysfsIrSend.canWrite() && !suUnlockAttempted) {
             unlockSysfsViaSu()
             if (tryWriteSysfsDirect(sysfsPayload)) return
         }
 
-        // 3. Direct root execution via su. Crucial when SELinux enforces untrusted_app separation
-        //    or when the ROM's ConsumerIR HAL is missing or failing silently.
+        // 3. Privileged sysfs write fallback when SELinux policies isolate untrusted_app
+        //    or when the platform's ConsumerIR HAL is absent or non-functional.
         if (sysfsIrSend.exists() && tryWriteSysfsViaSu(sysfsPayload)) return
 
-        // 4. Samsung legacy "irda" system service (IrdaManager.write_irsend) if exposed by TouchWiz.
-        if (tryWriteSamsungIrdaService(sysfsPayload)) return
+        // 4. Legacy vendor "irda" system service reflection if exposed by the framework.
+        if (tryWriteLegacyIrdaService(sysfsPayload)) return
 
-        // 5. Standard Android ConsumerIrManager (with Exynos cycle / FPGA 27x compensation).
+        // 5. Standard Android ConsumerIrManager API across all manufacturers.
         val manager = irManager ?: throw IrUnavailableException()
         manager.transmit(carrier, encodedPattern)
     }
@@ -167,7 +166,7 @@ class ConsumerIrTransmitter(
             true
         }.getOrDefault(false)
 
-    private fun tryWriteSamsungIrdaService(payload: String): Boolean {
+    private fun tryWriteLegacyIrdaService(payload: String): Boolean {
         val service = irdaService ?: return false
         val method = irdaWriteMethod ?: return false
         return runCatching {
@@ -186,7 +185,6 @@ class ConsumerIrTransmitter(
     }
 
     private fun tryWriteSysfsViaSu(payload: String): Boolean {
-        // Method A: Pipe directly to su stdin (avoids command-line argument limits and quote issues)
         val piped =
             runCatching {
                 val process = ProcessBuilder("su").redirectErrorStream(true).start()
@@ -206,7 +204,6 @@ class ConsumerIrTransmitter(
 
         if (piped) return true
 
-        // Method B: Fallback via su -c "echo ..."
         return runSuCommand("echo '$payload' > $SYSFS_SEC_IR_SEND")
     }
 
@@ -233,20 +230,23 @@ class ConsumerIrTransmitter(
     private fun ConsumerIrManager?.hasEmitterSafely(): Boolean = this != null && runCatching { hasIrEmitter() }.getOrDefault(false)
 
     companion object {
-        private const val SAMSUNG_IRDA_SERVICE = "irda"
-        private const val SAMSUNG_IRDA_WRITE_METHOD = "write_irsend"
+        private const val LEGACY_IRDA_SERVICE = "irda"
+        private const val LEGACY_IRDA_WRITE_METHOD = "write_irsend"
         private const val SYSFS_SEC_IR_SEND = "/sys/class/sec/sec_ir/ir_send"
         private const val SYSFS_SEC_IR_RESULT = "/sys/class/sec/sec_ir/ir_send_result"
         private const val SYSFS_SEC_IRDA_TEST = "/sys/class/sec/sec_ir/irda_test"
         private const val SU_TIMEOUT_MS = 5000L
 
         fun readDeviceInfo(): IrDeviceInfo {
-            val extra = "${Build.PRODUCT.orEmpty()} ${Build.DEVICE.orEmpty()} ${Build.BOARD.orEmpty()}".trim()
-            val fullModel = if (extra.isNotBlank()) "${Build.MODEL.orEmpty()} $extra" else Build.MODEL.orEmpty()
+            val hw =
+                listOf(Build.HARDWARE.orEmpty(), Build.BOARD.orEmpty())
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .joinToString(" / ")
             return IrDeviceInfo(
                 manufacturer = Build.MANUFACTURER.orEmpty(),
-                model = fullModel,
-                hardware = Build.HARDWARE.orEmpty(),
+                model = Build.MODEL.orEmpty(),
+                hardware = hw,
                 androidRelease = Build.VERSION.RELEASE.orEmpty(),
                 sdkInt = Build.VERSION.SDK_INT,
             )
@@ -254,7 +254,12 @@ class ConsumerIrTransmitter(
 
         fun defaultConfigForDevice(): IrTransmitConfig =
             IrTransmitConfig(
-                timingUnit = IrSignalAdapter.recommendedTimingUnit(readDeviceInfo()),
+                timingUnit =
+                    IrSignalAdapter.recommendedTimingUnit(
+                        device = readDeviceInfo(),
+                        hasSecIrNode = File(SYSFS_SEC_IR_SEND).exists(),
+                        hasFpgaNode = File(SYSFS_SEC_IRDA_TEST).exists(),
+                    ),
                 repeatCount = DigaTimings.DEFAULT_FRAME_REPEAT,
             )
     }

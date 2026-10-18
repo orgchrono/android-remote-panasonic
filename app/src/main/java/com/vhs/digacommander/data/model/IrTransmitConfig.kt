@@ -3,24 +3,24 @@ package com.vhs.digacommander.data.model
 import com.vhs.digacommander.data.constant.DigaTimings
 
 /**
- * Unit in which the pulse pattern is handed to the platform [android.hardware.ConsumerIrManager].
+ * Encoding unit for pulse intervals handed to the platform infrared transmitter.
  *
- * The AOSP contract is [MICROSECONDS]. Some Samsung firmwares (TouchWiz era, Exynos tablets)
- * historically interpreted the same array as a number of carrier cycles, so the app lets the
- * operator switch units and validate the result visually with a phone camera.
+ * The standard Android contract is [MICROSECONDS]. Certain hardware controllers and legacy
+ * HAL implementations interpret intervals as carrier wave cycle counts ([CARRIER_CYCLES]) or
+ * divide twice by the carrier period across HAL and kernel ([PERIOD_SCALED]).
  */
 enum class IrTimingUnit {
-    /** Standard AOSP contract: alternating mark/space durations in microseconds. */
+    /** Standard Android ConsumerIrManager contract: alternating mark/space durations in microseconds. */
     MICROSECONDS,
 
-    /** Samsung MC96 / legacy behaviour (e.g. GT-N8000): durations in carrier-wave cycles. */
+    /** Cycle-register controller mode: pulse durations expressed in carrier-wave cycle counts. */
     CARRIER_CYCLES,
 
     /**
-     * Samsung Exynos 5420 iCE40 FPGA compensation (e.g. SM-T805M on ROMs where both the
-     * ConsumerIR HAL and the ice4_fpga kernel driver divide by 1_000_000 / carrierHz).
+     * Period-scaled compensation mode: pre-multiplies durations by the carrier period
+     * (1_000_000 / carrierHz) for drivers that divide in both the HAL and kernel FPGA layer.
      */
-    EXYNOS_FPGA,
+    PERIOD_SCALED,
 }
 
 /**

@@ -2,11 +2,13 @@ package com.vhs.digacommander.presentation.ui.tabs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -14,76 +16,111 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.vhs.digacommander.data.model.DigaModelProfile
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 
 /**
- * Main Remote Control tab mirroring the physical Panasonic EUR7729KG0 controller.
+ * Main Remote Control tab mirroring the physical Panasonic DIGA controller.
  *
- * Layout adapts to the window: a single scrolling column on narrow screens and two balanced
- * columns on tablets (the target hardware is a 10" Exynos tablet), so keys keep a comfortable
- * size instead of stretching across 2500 px.
+ * Layout adapts to the viewport:
+ * - On tablets / wide screens (`screenWidthDp >= BreakpointWide`), renders a mathematically balanced
+ *   two-column grid (3 cards and 9 row-equivalents per column) synchronized with [IntrinsicSize.Max]
+ *   so both columns start and finish at the exact same pixel height.
+ * - On smartphones / narrow screens, stacks all sections cleanly in a single scrollable column.
  */
 @Composable
 fun RemoteTab(
-    activeProfile: DigaModelProfile,
+    isVcrDeck: Boolean,
     activeMode: RemoteMode,
-    onProfileSelected: (DigaModelProfile) -> Unit,
+    onToggleVcrDeck: () -> Unit,
     onModeSelected: (RemoteMode) -> Unit,
     onSendCommand: SendCommand,
     modifier: Modifier = Modifier,
 ) {
-    val hasVcr = activeProfile == DigaModelProfile.COMBO_VHS_DVD || activeProfile == DigaModelProfile.UNIVERSAL
-
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val isWide = maxWidth >= DigaUiDimensions.BreakpointWide
-        Box(
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= DigaUiDimensions.BreakpointWide
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Column(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.TopCenter,
+                    .widthIn(max = DigaUiDimensions.MaxContentWidth)
+                    .fillMaxWidth()
+                    .padding(DigaUiDimensions.PaddingScreen),
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .widthIn(max = DigaUiDimensions.MaxContentWidth)
-                        .fillMaxWidth()
-                        .padding(DigaUiDimensions.PaddingScreen),
-            ) {
-                if (isWide) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections)) {
-                        Column(
+            if (isWide) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                    ) {
+                        SystemSection(
+                            activeMode = activeMode,
+                            isVcrDeck = isVcrDeck,
+                            onModeSelected = onModeSelected,
+                            onToggleVcrDeck = onToggleVcrDeck,
+                            onSend = onSendCommand,
+                        )
+                        NavigationSection(onSend = onSendCommand)
+                        RecordingSection(
+                            isVcrDeck = isVcrDeck,
+                            onSend = onSendCommand,
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
-                        ) {
-                            ProfileSection(activeProfile, activeMode, onProfileSelected, onModeSelected)
-                            SystemSection(onSendCommand)
-                            NavigationSection(onSendCommand)
-                            RecordingSection(onSendCommand)
-                        }
-                        Column(
+                        )
+                    }
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                    ) {
+                        TransportSection(
+                            isVcrDeck = isVcrDeck,
+                            onSend = onSendCommand,
+                        )
+                        EditingSection(onSend = onSendCommand)
+                        KeypadSection(
+                            onSend = onSendCommand,
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
-                        ) {
-                            TransportSection(onSendCommand)
-                            if (hasVcr) VcrSection(activeMode, onSendCommand)
-                            EditingSection(onSendCommand)
-                            KeypadSection(onSendCommand)
-                        }
+                        )
                     }
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections)) {
-                        ProfileSection(activeProfile, activeMode, onProfileSelected, onModeSelected)
-                        SystemSection(onSendCommand)
-                        NavigationSection(onSendCommand)
-                        RecordingSection(onSendCommand)
-                        TransportSection(onSendCommand)
-                        if (hasVcr) VcrSection(activeMode, onSendCommand)
-                        EditingSection(onSendCommand)
-                        KeypadSection(onSendCommand)
-                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections)) {
+                    SystemSection(
+                        activeMode = activeMode,
+                        isVcrDeck = isVcrDeck,
+                        onModeSelected = onModeSelected,
+                        onToggleVcrDeck = onToggleVcrDeck,
+                        onSend = onSendCommand,
+                    )
+                    NavigationSection(onSend = onSendCommand)
+                    TransportSection(
+                        isVcrDeck = isVcrDeck,
+                        onSend = onSendCommand,
+                    )
+                    RecordingSection(
+                        isVcrDeck = isVcrDeck,
+                        onSend = onSendCommand,
+                    )
+                    EditingSection(onSend = onSendCommand)
+                    KeypadSection(onSend = onSendCommand)
                 }
             }
         }

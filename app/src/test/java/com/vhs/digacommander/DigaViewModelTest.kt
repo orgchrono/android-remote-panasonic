@@ -4,7 +4,6 @@ import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
 import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.ir.InMemoryIrConfigStore
 import com.vhs.digacommander.data.model.DigaDevice
-import com.vhs.digacommander.data.model.DigaModelProfile
 import com.vhs.digacommander.data.model.IrTimingUnit
 import com.vhs.digacommander.data.model.IrTransmitConfig
 import com.vhs.digacommander.data.model.RemoteMode
@@ -51,7 +50,7 @@ class DigaViewModelTest {
         val viewModel = DigaViewModel(fakeTransmitter, pipeline)
 
         val state = viewModel.uiState.value
-        assertEquals(DigaModelProfile.DMR_EH55, state.activeProfile)
+        assertFalse(state.isVcrDeck)
         assertEquals(RemoteMode.MODE_1, state.activeMode)
         assertEquals(0, state.selectedTabIndex)
         assertEquals(DigaUiStrings.VFD_READY, state.vfdMainText)
@@ -69,13 +68,20 @@ class DigaViewModelTest {
     }
 
     @Test
-    fun testProfileAndModeSelection() {
+    fun testDeckToggleAndModeSelection() {
         val fakeTransmitter = FakeIrTransmitter(isAvailable = true)
         val pipeline = DigaMacroPipeline(fakeTransmitter)
         val viewModel = DigaViewModel(fakeTransmitter, pipeline)
 
-        viewModel.onProfileSelected(DigaModelProfile.COMBO_VHS_DVD)
-        assertEquals(DigaModelProfile.COMBO_VHS_DVD, viewModel.uiState.value.activeProfile)
+        viewModel.onToggleVcrDeck()
+        assertTrue(viewModel.uiState.value.isVcrDeck)
+        assertEquals(DigaUiStrings.VFD_DECK_VCR_MAIN, viewModel.uiState.value.vfdMainText)
+        assertEquals(DigaUiStrings.VFD_DECK_VCR_SUB, viewModel.uiState.value.vfdSubText)
+
+        viewModel.onToggleVcrDeck()
+        assertFalse(viewModel.uiState.value.isVcrDeck)
+        assertEquals(DigaUiStrings.VFD_DECK_DVD_MAIN, viewModel.uiState.value.vfdMainText)
+        assertEquals(DigaUiStrings.VFD_DECK_DVD_SUB, viewModel.uiState.value.vfdSubText)
 
         viewModel.onModeSelected(RemoteMode.MODE_2)
         assertEquals(RemoteMode.MODE_2, viewModel.uiState.value.activeMode)
@@ -128,7 +134,8 @@ class DigaViewModelTest {
             val pipeline = DigaMacroPipeline(fakeTransmitter, scope = this)
             val viewModel = DigaViewModel(fakeTransmitter, pipeline, ioDispatcher = testDispatcher)
 
-            viewModel.sendCommand("VHS PLAY", PanasonicDigaCatalog.OBC.PLAY, isVcr = true)
+            viewModel.onToggleVcrDeck()
+            viewModel.sendCommand("PLAY", PanasonicDigaCatalog.OBC.PLAY)
             advanceUntilIdle()
 
             assertEquals(1, fakeTransmitter.transmittedKaseikyo.size)
@@ -167,11 +174,11 @@ class DigaViewModelTest {
         }
 
     @Test
-    fun testSamsungSpanPreserves37010AndOutOfSpanAdapts() {
-        val samsungSpanTransmitter = FakeIrTransmitter(isAvailable = true, supportedFrequencies = listOf(36000, 38000))
-        val samsungVm = DigaViewModel(samsungSpanTransmitter, DigaMacroPipeline(samsungSpanTransmitter), ioDispatcher = testDispatcher)
-        assertEquals(IrLinkStatus.ONLINE, samsungVm.uiState.value.irLinkStatus)
-        assertEquals(37010, samsungVm.uiState.value.resolvedCarrierHz)
+    fun testDiscreteSpanPreserves37010AndOutOfSpanAdapts() {
+        val spanTransmitter = FakeIrTransmitter(isAvailable = true, supportedFrequencies = listOf(36000, 38000))
+        val spanVm = DigaViewModel(spanTransmitter, DigaMacroPipeline(spanTransmitter), ioDispatcher = testDispatcher)
+        assertEquals(IrLinkStatus.ONLINE, spanVm.uiState.value.irLinkStatus)
+        assertEquals(37010, spanVm.uiState.value.resolvedCarrierHz)
 
         val narrowTransmitter = FakeIrTransmitter(isAvailable = true, supportedFrequencies = listOf(38000, 40000))
         val narrowVm = DigaViewModel(narrowTransmitter, DigaMacroPipeline(narrowTransmitter), ioDispatcher = testDispatcher)

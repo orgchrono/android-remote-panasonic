@@ -3,9 +3,12 @@ package com.vhs.digacommander.presentation.ui.tabs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -20,8 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.model.IrCapabilities
 import com.vhs.digacommander.data.model.IrTimingUnit
@@ -39,8 +44,10 @@ import com.vhs.digacommander.presentation.viewmodel.DigaUiState
 import com.vhs.digacommander.presentation.viewmodel.IrLinkStatus
 
 /**
- * IR Link tab: explains why the emitter does or does not work, provides a camera-verifiable test
- * beacon and exposes the two driver-quirk settings (timing unit, frame repetition).
+ * IR Link tab: reports emitter hardware telemetry, provides a camera-verifiable test
+ * beacon, and exposes universal pulse timing encoding and frame repetition settings.
+ *
+ * Uses a balanced two-column layout on wide tablets and a single scrolling column on phones.
  */
 @Composable
 fun IrDiagnosticsTab(
@@ -51,19 +58,68 @@ fun IrDiagnosticsTab(
     onRescan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= DigaUiDimensions.BreakpointWide
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.TopCenter,
+    ) {
         Column(
             modifier =
                 Modifier
                     .widthIn(max = DigaUiDimensions.MaxContentWidth)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
                     .padding(DigaUiDimensions.PaddingScreen),
             verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
         ) {
-            StatusCard(state, onRescan)
-            CameraTestCard(state, onBeaconToggled)
-            CalibrationCard(state, onTimingUnitSelected, onRepeatSelected)
+            if (isWide) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                    ) {
+                        StatusCard(
+                            state = state,
+                            onRescan = onRescan,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingSections),
+                    ) {
+                        CameraTestCard(state = state, onBeaconToggled = onBeaconToggled)
+                        CalibrationCard(
+                            state = state,
+                            onTimingUnitSelected = onTimingUnitSelected,
+                            onRepeatSelected = onRepeatSelected,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            } else {
+                StatusCard(state = state, onRescan = onRescan)
+                CameraTestCard(state = state, onBeaconToggled = onBeaconToggled)
+                CalibrationCard(
+                    state = state,
+                    onTimingUnitSelected = onTimingUnitSelected,
+                    onRepeatSelected = onRepeatSelected,
+                )
+            }
         }
     }
 }
@@ -72,6 +128,7 @@ fun IrDiagnosticsTab(
 private fun StatusCard(
     state: DigaUiState,
     onRescan: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val link = state.irLinkStatus
     val (title, body) =
@@ -82,6 +139,7 @@ private fun StatusCard(
         }
     DigaCard(
         title = DigaDiagnosticsStrings.CARD_STATUS,
+        modifier = modifier,
         icon = Icons.Filled.SettingsInputAntenna,
         accent = link.indicatorColor(),
     ) {
@@ -140,9 +198,11 @@ private fun FactsTable(state: DigaUiState) {
 private fun CameraTestCard(
     state: DigaUiState,
     onBeaconToggled: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     DigaCard(
         title = DigaDiagnosticsStrings.CARD_CAMERA_TEST,
+        modifier = modifier,
         icon = Icons.Filled.Visibility,
     ) {
         DigaBodyText(text = DigaDiagnosticsStrings.CAMERA_STEPS)
@@ -169,9 +229,11 @@ private fun CalibrationCard(
     state: DigaUiState,
     onTimingUnitSelected: (IrTimingUnit) -> Unit,
     onRepeatSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     DigaCard(
         title = DigaDiagnosticsStrings.CARD_CALIBRATION,
+        modifier = modifier,
         icon = Icons.Filled.Tune,
     ) {
         DigaBodyText(text = DigaDiagnosticsStrings.CALIBRATION_INTRO)
@@ -184,7 +246,7 @@ private fun CalibrationCard(
                 when (it) {
                     IrTimingUnit.MICROSECONDS -> DigaDiagnosticsStrings.UNIT_MICROSECONDS
                     IrTimingUnit.CARRIER_CYCLES -> DigaDiagnosticsStrings.UNIT_CYCLES
-                    IrTimingUnit.EXYNOS_FPGA -> DigaDiagnosticsStrings.UNIT_EXYNOS_FPGA
+                    IrTimingUnit.PERIOD_SCALED -> DigaDiagnosticsStrings.UNIT_PERIOD_SCALED
                 }
             },
             onSelect = onTimingUnitSelected,

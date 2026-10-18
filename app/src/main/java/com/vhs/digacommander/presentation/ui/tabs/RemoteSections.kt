@@ -1,7 +1,6 @@
 package com.vhs.digacommander.presentation.ui.tabs
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -13,12 +12,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.automirrored.filled.Input
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Eject
@@ -27,10 +30,7 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Input
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -41,12 +41,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.VolumeDown
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
@@ -72,9 +68,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog.OBC
-import com.vhs.digacommander.data.model.DigaModelProfile
 import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
@@ -91,6 +87,8 @@ import com.vhs.digacommander.presentation.ui.components.RemoteKey
 import com.vhs.digacommander.presentation.ui.components.keyStyle
 import com.vhs.digacommander.presentation.ui.components.textColor
 import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Callback signature shared by every key: telemetry label, Original Button Code, VCR deck flag. */
@@ -122,6 +120,7 @@ fun KeyRow(
     onSend: SendCommand,
     modifier: Modifier = Modifier,
     height: Dp = DigaUiDimensions.HeightKey,
+    fontSize: TextUnit = DigaUiDimensions.TextSizeKey,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -136,40 +135,13 @@ fun KeyRow(
                 icon = key.icon,
                 iconOnly = key.iconOnly,
                 height = height,
+                fontSize = fontSize,
             )
         }
     }
 }
 
 // --- Key catalogues (immutable, allocated once) --------------------------------------------------
-
-private val systemPrimaryRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_POWER,
-            DigaUiStrings.CMD_LABEL_POWER,
-            OBC.POWER,
-            KeyStyle.Danger,
-            Icons.Filled.PowerSettingsNew,
-            weight = 1.4f
-        ),
-        RemoteKeySpec(DigaUiStrings.BTN_EJECT, DigaUiStrings.CMD_LABEL_EJECT, OBC.EJECT, icon = Icons.Filled.Eject),
-        RemoteKeySpec(DigaUiStrings.BTN_STATUS, DigaUiStrings.CMD_LABEL_STATUS, OBC.STATUS, icon = Icons.Filled.Info),
-        RemoteKeySpec(DigaUiStrings.BTN_DISPLAY, DigaUiStrings.CMD_LABEL_DISPLAY, OBC.DISPLAY),
-    )
-
-private val systemSelectRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_DRIVE_SELECT_ALL,
-            DigaUiStrings.CMD_LABEL_DRIVE_SELECT,
-            OBC.DRIVE_SELECT,
-            KeyStyle.Primary,
-            Icons.Filled.Autorenew,
-            weight = 1.5f,
-        ),
-        RemoteKeySpec(DigaUiStrings.BTN_INPUT_SELECT, DigaUiStrings.CMD_LABEL_INPUT_SELECT, OBC.INPUT_SELECT, icon = Icons.Filled.Input),
-    )
 
 private val menuRow =
     listOf(
@@ -187,156 +159,6 @@ private val navigationFooterRow =
         RemoteKeySpec(DigaUiStrings.BTN_PROG_CHECK, DigaUiStrings.CMD_LABEL_PROG_CHECK, OBC.PROG_CHECK),
     )
 
-private val transportMainRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_PLAY,
-            DigaUiStrings.CMD_LABEL_PLAY,
-            OBC.PLAY,
-            KeyStyle.Success,
-            Icons.Filled.PlayArrow,
-            weight = 1.2f
-        ),
-        RemoteKeySpec(DigaUiStrings.BTN_PAUSE, DigaUiStrings.CMD_LABEL_PAUSE, OBC.PAUSE, KeyStyle.Warning, Icons.Filled.Pause),
-        RemoteKeySpec(DigaUiStrings.BTN_STOP, DigaUiStrings.CMD_LABEL_STOP, OBC.STOP, KeyStyle.DangerDark, Icons.Filled.Stop),
-    )
-
-private val transportSeekRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_SKIP_PREV,
-            DigaUiStrings.CMD_LABEL_SKIP_PREV,
-            OBC.SKIP_PREV,
-            icon = Icons.Filled.SkipPrevious,
-            iconOnly = true
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_REWIND,
-            DigaUiStrings.CMD_LABEL_REWIND,
-            OBC.REWIND,
-            icon = Icons.Filled.FastRewind,
-            iconOnly = true
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_FAST_FORWARD,
-            DigaUiStrings.CMD_LABEL_FAST_FORWARD,
-            OBC.FAST_FORWARD,
-            icon = Icons.Filled.FastForward,
-            iconOnly = true,
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_SKIP_NEXT,
-            DigaUiStrings.CMD_LABEL_SKIP_NEXT,
-            OBC.SKIP_NEXT,
-            icon = Icons.Filled.SkipNext,
-            iconOnly = true
-        ),
-    )
-
-private val vcrDeckRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_DRIVE,
-            DigaUiStrings.CMD_LABEL_VCR_DRIVE,
-            OBC.DRIVE_SELECT,
-            KeyStyle.Warning,
-            weight = 1.5f,
-            isVcr = true,
-        ),
-        RemoteKeySpec(DigaUiStrings.BTN_VCR_EJECT, DigaUiStrings.CMD_LABEL_VCR_EJECT, OBC.EJECT, icon = Icons.Filled.Eject, isVcr = true),
-    )
-
-private val vcrTransportMainRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_PLAY,
-            DigaUiStrings.CMD_LABEL_VCR_PLAY,
-            OBC.PLAY,
-            KeyStyle.Success,
-            Icons.Filled.PlayArrow,
-            weight = 1.2f,
-            isVcr = true,
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_PAUSE,
-            DigaUiStrings.CMD_LABEL_VCR_PAUSE,
-            OBC.PAUSE,
-            KeyStyle.Warning,
-            Icons.Filled.Pause,
-            isVcr = true
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_STOP,
-            DigaUiStrings.CMD_LABEL_VCR_STOP,
-            OBC.STOP,
-            KeyStyle.DangerDark,
-            Icons.Filled.Stop,
-            isVcr = true
-        ),
-    )
-
-private val vcrTransportSeekRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_REWIND,
-            DigaUiStrings.CMD_LABEL_VCR_REWIND,
-            OBC.REWIND,
-            icon = Icons.Filled.FastRewind,
-            isVcr = true
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_FF,
-            DigaUiStrings.CMD_LABEL_VCR_FF,
-            OBC.FAST_FORWARD,
-            icon = Icons.Filled.FastForward,
-            isVcr = true
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_REC,
-            DigaUiStrings.CMD_LABEL_VCR_REC,
-            OBC.REC,
-            KeyStyle.Danger,
-            Icons.Filled.FiberManualRecord,
-            isVcr = true,
-        ),
-    )
-
-private val vcrTrackingRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_TRACKING_UP,
-            DigaUiStrings.CMD_LABEL_VCR_TRACKING_UP,
-            OBC.VCR_TRACKING_PLUS,
-            KeyStyle.Primary,
-            isVcr = true,
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_VCR_TRACKING_DOWN,
-            DigaUiStrings.CMD_LABEL_VCR_TRACKING_DOWN,
-            OBC.VCR_TRACKING_MINUS,
-            KeyStyle.Primary,
-            isVcr = true,
-        ),
-    )
-
-private val vcrDubRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_DUB_VHS_TO_DVD,
-            DigaUiStrings.CMD_LABEL_VCR_DUB_VHS_TO_DVD,
-            OBC.VCR_DUB_VHS_TO_DVD,
-            KeyStyle.Accent,
-            Icons.Filled.SwapHoriz,
-        ),
-        RemoteKeySpec(
-            DigaUiStrings.BTN_DUB_DVD_TO_VHS,
-            DigaUiStrings.CMD_LABEL_VCR_DUB_DVD_TO_VHS,
-            OBC.VCR_DUB_DVD_TO_VHS,
-            KeyStyle.Accent,
-            Icons.Filled.SwapHoriz,
-        ),
-    )
-
 private val editingPlaybackRow =
     listOf(
         RemoteKeySpec(
@@ -345,13 +167,13 @@ private val editingPlaybackRow =
             OBC.TIME_SLIP,
             KeyStyle.Warning,
             Icons.Filled.Schedule,
-            weight = 1.3f
+            weight = 1.3f,
         ),
         RemoteKeySpec(
             DigaUiStrings.BTN_REPLAY_10S,
             DigaUiStrings.CMD_LABEL_REPLAY_10S,
             OBC.MANUAL_REPLAY_10S,
-            icon = Icons.Filled.Replay10
+            icon = Icons.Filled.Replay10,
         ),
         RemoteKeySpec(DigaUiStrings.BTN_SKIP_30S, DigaUiStrings.CMD_LABEL_SKIP_30S, OBC.MANUAL_SKIP_30S, icon = Icons.Filled.Forward30),
     )
@@ -371,20 +193,6 @@ private val editingToolsRow =
         RemoteKeySpec(DigaUiStrings.BTN_SUBTITLE, DigaUiStrings.CMD_LABEL_SUBTITLE, OBC.SUBTITLE, weight = 0.9f),
     )
 
-private val recordingRow =
-    listOf(
-        RemoteKeySpec(
-            DigaUiStrings.BTN_REC,
-            DigaUiStrings.CMD_LABEL_REC,
-            OBC.REC,
-            KeyStyle.Danger,
-            Icons.Filled.FiberManualRecord,
-            weight = 1.2f
-        ),
-        RemoteKeySpec(DigaUiStrings.BTN_REC_MODE, DigaUiStrings.CMD_LABEL_REC_MODE, OBC.REC_MODE, weight = 1.5f),
-        RemoteKeySpec(DigaUiStrings.BTN_EXT_LINK, DigaUiStrings.CMD_LABEL_EXT_LINK, OBC.EXT_LINK, weight = 1.1f),
-    )
-
 private val keypadRows =
     listOf(
         listOf("1" to OBC.DIGIT_1, "2" to OBC.DIGIT_2, "3" to OBC.DIGIT_3),
@@ -401,92 +209,106 @@ private val keypadFooterRow =
 
 // --- Sections ------------------------------------------------------------------------------------
 
+/**
+ * Combined System, IR Channel (SET 1 / SET 2 / SET 3), and Drive Selection card (3 rows).
+ * Eliminates the redundant Recorder Profile selector while keeping IR channel sets and deck
+ * bus switching (DVD/HDD 0xB0 vs VHS/VCR 0x90) immediately accessible.
+ */
 @Composable
-fun ProfileSection(
-    activeProfile: DigaModelProfile,
+fun SystemSection(
     activeMode: RemoteMode,
-    onProfileSelected: (DigaModelProfile) -> Unit,
+    isVcrDeck: Boolean,
     onModeSelected: (RemoteMode) -> Unit,
+    onToggleVcrDeck: () -> Unit,
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
 ) {
-    var profileMenuExpanded by remember { mutableStateOf(false) }
+    val systemPrimaryRow =
+        remember(isVcrDeck) {
+            listOf(
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_POWER,
+                    DigaUiStrings.CMD_LABEL_POWER,
+                    OBC.POWER,
+                    KeyStyle.Danger,
+                    Icons.Filled.PowerSettingsNew,
+                    weight = 1.3f,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_EJECT,
+                    DigaUiStrings.CMD_LABEL_EJECT,
+                    OBC.EJECT,
+                    icon = Icons.Filled.Eject,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(DigaUiStrings.BTN_STATUS, DigaUiStrings.CMD_LABEL_STATUS, OBC.STATUS, icon = Icons.Filled.Info),
+                RemoteKeySpec(DigaUiStrings.BTN_DISPLAY, DigaUiStrings.CMD_LABEL_DISPLAY, OBC.DISPLAY),
+            )
+        }
 
     DigaCard(
-        title = DigaUiStrings.SECTION_PROFILE_MODE,
+        title = DigaUiStrings.SECTION_SYSTEM_DRIVE,
+        modifier = modifier,
         trailing = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
-            ) {
-                Box {
-                    Row(
-                        modifier =
-                            Modifier
-                                .clickable { profileMenuExpanded = true }
-                                .padding(
-                                    horizontal = DigaUiDimensions.PaddingCompactH,
-                                    vertical = DigaUiDimensions.PaddingCompactV,
-                                ),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingMicro),
-                    ) {
-                        Text(
-                            text = activeProfile.id,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = DigaUiDimensions.TextSizeVfdSub,
-                            color = DigaBlueLight,
-                        )
-                        Icon(
-                            imageVector = Icons.Filled.ArrowDropDown,
-                            contentDescription = null,
-                            tint = DigaBlueLight,
-                            modifier = Modifier.size(DigaUiDimensions.SizeKeyIconCompact),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = profileMenuExpanded,
-                        onDismissRequest = { profileMenuExpanded = false },
-                    ) {
-                        DigaModelProfile.entries.forEach { profile ->
-                            DropdownMenuItem(
-                                text = { Text(profile.displayName) },
-                                onClick = {
-                                    onProfileSelected(profile)
-                                    profileMenuExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
-                Text(
-                    text = "${DigaUiStrings.LABEL_ACTIVE_PREFIX}${activeMode.label}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = DigaUiDimensions.TextSizeVfdSub,
-                    color = activeMode.textColor(),
-                )
-            }
+            Text(
+                text = "${DigaUiStrings.LABEL_ACTIVE_PREFIX}${activeMode.label}",
+                fontWeight = FontWeight.Bold,
+                fontSize = DigaUiDimensions.TextSizeVfdSub,
+                color = activeMode.textColor(),
+            )
         },
     ) {
+        // Row 1: IR Channel Sets (SET 1 / SET 2 / SET 3)
         ChoiceRow(
             options = RemoteMode.entries,
             selected = activeMode,
             labelOf = { it.label },
             onSelect = onModeSelected,
             accentOf = { it.keyStyle() },
+            height = DigaUiDimensions.HeightKey,
         )
-    }
-}
 
-@Composable
-fun SystemSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_SYSTEM_DRIVE) {
+        // Row 2: Power, Eject, Status, Display
         KeyRow(systemPrimaryRow, onSend)
-        KeyRow(systemSelectRow, onSend)
+
+        // Row 3: Drive Select, Active Deck Target (DVD/HDD vs VHS/VCR), and Input Select
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
+        ) {
+            RemoteKey(
+                label = DigaUiStrings.BTN_DRIVE_SELECT_ALL,
+                onClick = { onSend(DigaUiStrings.CMD_LABEL_DRIVE_SELECT, OBC.DRIVE_SELECT, isVcrDeck) },
+                modifier = Modifier.weight(1.1f),
+                style = KeyStyle.Primary,
+                icon = Icons.Filled.Autorenew,
+            )
+            RemoteKey(
+                label = if (isVcrDeck) DigaUiStrings.BTN_DECK_VHS else DigaUiStrings.BTN_DECK_DVD,
+                onClick = onToggleVcrDeck,
+                modifier = Modifier.weight(1.1f),
+                style = if (isVcrDeck) KeyStyle.Warning else KeyStyle.Neutral,
+                icon = Icons.Filled.SwapHoriz,
+            )
+            RemoteKey(
+                label = DigaUiStrings.BTN_INPUT_SELECT,
+                onClick = { onSend(DigaUiStrings.CMD_LABEL_INPUT_SELECT, OBC.INPUT_SELECT, false) },
+                modifier = Modifier.weight(1f),
+                icon = Icons.AutoMirrored.Filled.Input,
+            )
+        }
     }
 }
 
 @Composable
-fun NavigationSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_NAVIGATION_MENUS) {
+fun NavigationSection(
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.SECTION_NAVIGATION_MENUS,
+        modifier = modifier,
+    ) {
         KeyRow(menuRow, onSend)
         DPadCluster(onSend)
         KeyRow(navigationFooterRow, onSend)
@@ -502,6 +324,13 @@ private enum class TargetDpadSection {
     OK,
 }
 
+/**
+ * Circumscribed circular D-Pad around a circular center OK button.
+ *
+ * The outer directional ring is divided by four diagonal lines at NE (315 deg), SE (45 deg),
+ * SW (135 deg), and NW (225 deg), separating the North (UP), South (DOWN), East (RIGHT),
+ * and West (LEFT) navigation vectors.
+ */
 @Composable
 fun CircularTargetDpad(
     onSend: SendCommand,
@@ -514,14 +343,19 @@ fun CircularTargetDpad(
     val density = LocalDensity.current
 
     val okSizePx = with(density) { okSize.toPx() }
-    val gapPx = with(density) { 4.dp.toPx() }
-    val strokeWidthPx = with(density) { 1.5.dp.toPx() }
+    val ringGapDp = DigaUiDimensions.SpacingDpadGap
+    val ringGapPx = with(density) { ringGapDp.toPx() }
+    val strokeWidthPx = with(density) { 1.75.dp.toPx() }
+    val dividerWidthPx = with(density) { 2.dp.toPx() }
+
+    // Exact radial midpoint of the circumscribed ring from center
+    val midRadiusDp = (size / 2f + okSize / 2f + ringGapDp) / 2f
 
     Box(
         modifier =
             modifier
                 .size(size)
-                .pointerInput(Unit) {
+                .pointerInput(size, okSize) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         val center = Offset(this.size.width / 2f, this.size.height / 2f)
@@ -580,43 +414,75 @@ fun CircularTargetDpad(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(this.size.width / 2f, this.size.height / 2f)
-            val radiusOuter = this.size.width / 2f
+            val radiusOuter = (this.size.width / 2f) - strokeWidthPx
             val radiusOk = okSizePx / 2f
-            val radiusInner = radiusOk + gapPx
+            val radiusInner = radiusOk + ringGapPx
 
-            // 4 Directional Sectors (Outer Ring) forming a circumscribed circle
-            val gapHalfAngle = 1.5f
-            val sweepAngle = 90f - (gapHalfAngle * 2f)
+            val outerRect = Rect(center.x - radiusOuter, center.y - radiusOuter, center.x + radiusOuter, center.y + radiusOuter)
+            val innerRect = Rect(center.x - radiusInner, center.y - radiusInner, center.x + radiusInner, center.y + radiusInner)
 
+            // 1. Base circumscribed annular ring
+            val fullRingPath =
+                Path().apply {
+                    addOval(outerRect)
+                    addOval(innerRect)
+                    fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
+                }
+            drawPath(fullRingPath, color = DigaSurfaceVariant)
+
+            // 2. Highlight active directional quadrant (North, South, East, West)
             val sectors =
                 listOf(
-                    Triple(TargetDpadSection.RIGHT, -45f + gapHalfAngle, sweepAngle),
-                    Triple(TargetDpadSection.DOWN, 45f + gapHalfAngle, sweepAngle),
-                    Triple(TargetDpadSection.LEFT, 135f + gapHalfAngle, sweepAngle),
-                    Triple(TargetDpadSection.UP, 225f + gapHalfAngle, sweepAngle),
+                    Triple(TargetDpadSection.RIGHT, -45f, 90f),
+                    Triple(TargetDpadSection.DOWN, 45f, 90f),
+                    Triple(TargetDpadSection.LEFT, 135f, 90f),
+                    Triple(TargetDpadSection.UP, 225f, 90f),
                 )
 
             for ((section, startAngle, sweep) in sectors) {
-                val isPressed = pressedSection == section
-                val sectorPath =
-                    Path().apply {
-                        val outerRect = Rect(center.x - radiusOuter, center.y - radiusOuter, center.x + radiusOuter, center.y + radiusOuter)
-                        val innerRect = Rect(center.x - radiusInner, center.y - radiusInner, center.x + radiusInner, center.y + radiusInner)
-                        arcTo(outerRect, startAngle, sweep, forceMoveTo = true)
-                        arcTo(innerRect, startAngle + sweep, -sweep, forceMoveTo = false)
-                        close()
-                    }
+                if (pressedSection == section) {
+                    val sectorPath =
+                        Path().apply {
+                            arcTo(outerRect, startAngle, sweep, forceMoveTo = true)
+                            arcTo(innerRect, startAngle + sweep, -sweep, forceMoveTo = false)
+                            close()
+                        }
+                    drawPath(sectorPath, color = DigaBlue.copy(alpha = 0.72f))
+                    drawPath(sectorPath, color = DigaBlueLight, style = Stroke(width = strokeWidthPx))
+                }
+            }
 
-                val fillColor = if (isPressed) DigaBlue.copy(alpha = 0.6f) else DigaSurfaceVariant
-                drawPath(sectorPath, color = fillColor)
-                drawPath(
-                    sectorPath,
-                    color = if (isPressed) DigaBlueLight else DigaOutline,
-                    style = Stroke(width = strokeWidthPx),
+            // 3. Outer & Inner circumscribed circle borders
+            drawCircle(
+                color = DigaOutline,
+                radius = radiusOuter,
+                center = center,
+                style = Stroke(width = strokeWidthPx),
+            )
+            drawCircle(
+                color = DigaOutline,
+                radius = radiusInner,
+                center = center,
+                style = Stroke(width = strokeWidthPx),
+            )
+
+            // 4. Diagonal dividers at SE (45 deg), SW (135 deg), NW (225 deg), NE (315 deg)
+            val diagonalAngles = floatArrayOf(45f, 135f, 225f, 315f)
+            for (deg in diagonalAngles) {
+                val rad = Math.toRadians(deg.toDouble())
+                val cosA = cos(rad).toFloat()
+                val sinA = sin(rad).toFloat()
+                val startPt = Offset(center.x + radiusInner * cosA, center.y + radiusInner * sinA)
+                val endPt = Offset(center.x + radiusOuter * cosA, center.y + radiusOuter * sinA)
+                drawLine(
+                    color = DigaOutline,
+                    start = startPt,
+                    end = endPt,
+                    strokeWidth = dividerWidthPx,
                 )
             }
 
-            // Center Circular OK Button
+            // 5. Center Circular OK Button
             val isOkPressed = pressedSection == TargetDpadSection.OK
             val okFillColor = if (isOkPressed) DigaBlueLight else DigaBlue
             drawCircle(
@@ -625,23 +491,23 @@ fun CircularTargetDpad(
                 center = center,
             )
             drawCircle(
-                color = if (isOkPressed) Color.White else DigaOutline,
+                color = if (isOkPressed) Color.White else DigaBlueLight.copy(alpha = 0.85f),
                 radius = radiusOk,
                 center = center,
-                style = Stroke(width = strokeWidthPx + 0.5f),
+                style = Stroke(width = strokeWidthPx),
             )
         }
 
-        // Overlay Directional Icons
+        // Directional Arrow Icons centered on the radial midline of North, South, West, East sectors
         Icon(
             imageVector = Icons.Filled.KeyboardArrowUp,
             contentDescription = null,
             tint = if (pressedSection == TargetDpadSection.UP) DigaBlueLight else DigaTextPrimary,
             modifier =
                 Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 18.dp)
-                    .size(DigaUiDimensions.SizeKeyIcon),
+                    .align(Alignment.Center)
+                    .offset(y = -midRadiusDp)
+                    .size(DigaUiDimensions.SizeDpadArrowIcon),
         )
 
         Icon(
@@ -650,31 +516,31 @@ fun CircularTargetDpad(
             tint = if (pressedSection == TargetDpadSection.DOWN) DigaBlueLight else DigaTextPrimary,
             modifier =
                 Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 18.dp)
-                    .size(DigaUiDimensions.SizeKeyIcon),
+                    .align(Alignment.Center)
+                    .offset(y = midRadiusDp)
+                    .size(DigaUiDimensions.SizeDpadArrowIcon),
         )
 
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowLeft,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
             contentDescription = null,
             tint = if (pressedSection == TargetDpadSection.LEFT) DigaBlueLight else DigaTextPrimary,
             modifier =
                 Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 18.dp)
-                    .size(DigaUiDimensions.SizeKeyIcon),
+                    .align(Alignment.Center)
+                    .offset(x = -midRadiusDp)
+                    .size(DigaUiDimensions.SizeDpadArrowIcon),
         )
 
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = if (pressedSection == TargetDpadSection.RIGHT) DigaBlueLight else DigaTextPrimary,
             modifier =
                 Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 18.dp)
-                    .size(DigaUiDimensions.SizeKeyIcon),
+                    .align(Alignment.Center)
+                    .offset(x = midRadiusDp)
+                    .size(DigaUiDimensions.SizeDpadArrowIcon),
         )
 
         // Center OK Text
@@ -764,17 +630,27 @@ fun CircularTargetDpad(
     }
 }
 
+/**
+ * Navigation cluster pairing the circumscribed circular D-Pad with wide lateral
+ * Volume (`VOL +` / `VOL -`) and Channel (`CH +` / `CH -`) rockers that expand to fill
+ * all remaining horizontal space on both phones and tablets.
+ */
 @Composable
 private fun DPadCluster(onSend: SendCommand) {
+    val isCompactPhone = LocalConfiguration.current.screenWidthDp < 360
+    val dpadSize = if (isCompactPhone) DigaUiDimensions.SizeTargetDpadCompact else DigaUiDimensions.SizeTargetDpad
+    val okSize = if (isCompactPhone) DigaUiDimensions.SizeTargetOkCompact else DigaUiDimensions.SizeTargetOk
+    val flankHeight = if (isCompactPhone) DigaUiDimensions.HeightFlankDpadButtonCompact else DigaUiDimensions.HeightFlankDpadButton
+
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
+        horizontalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingDpadFlankGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Left Flank: Volume controls (VOL + / VOL -) expanded to weight 1f to match navigation columns
+        // Left Flank: Wide Volume controls (VOL + / VOL -) filling full space up to the circular D-Pad
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
+            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RemoteKey(
@@ -783,9 +659,9 @@ private fun DPadCluster(onSend: SendCommand) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(DigaUiDimensions.HeightFlankDpadButton),
-                icon = Icons.Filled.VolumeUp,
-                fontSize = DigaUiDimensions.TextSizeButtonCompact,
+                        .height(flankHeight),
+                icon = Icons.AutoMirrored.Filled.VolumeUp,
+                fontSize = DigaUiDimensions.TextSizeDpadFlank,
                 shape =
                     RoundedCornerShape(
                         topStart = DigaUiDimensions.RadiusTargetFlankOuter,
@@ -806,9 +682,9 @@ private fun DPadCluster(onSend: SendCommand) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(DigaUiDimensions.HeightFlankDpadButton),
-                icon = Icons.Filled.VolumeDown,
-                fontSize = DigaUiDimensions.TextSizeButtonCompact,
+                        .height(flankHeight),
+                icon = Icons.AutoMirrored.Filled.VolumeDown,
+                fontSize = DigaUiDimensions.TextSizeDpadFlank,
                 shape =
                     RoundedCornerShape(
                         topStart = DigaUiDimensions.RadiusTargetFlankInner,
@@ -825,18 +701,17 @@ private fun DPadCluster(onSend: SendCommand) {
             )
         }
 
-        // Center: Circular Target D-Pad controller (weight 2f)
-        Box(
-            modifier = Modifier.weight(2f),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularTargetDpad(onSend = onSend)
-        }
+        // Center: Circumscribed Circular Target D-Pad (sized to exact diameter, no extra wrapper width)
+        CircularTargetDpad(
+            onSend = onSend,
+            size = dpadSize,
+            okSize = okSize,
+        )
 
-        // Right Flank: Channel controls (CH + / CH -) expanded to weight 1f to match navigation columns
+        // Right Flank: Wide Channel controls (CH + / CH -) filling full space from the circular D-Pad to card edge
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingButtons),
+            verticalArrangement = Arrangement.spacedBy(DigaUiDimensions.SpacingRows),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RemoteKey(
@@ -845,9 +720,9 @@ private fun DPadCluster(onSend: SendCommand) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(DigaUiDimensions.HeightFlankDpadButton),
+                        .height(flankHeight),
                 icon = Icons.Filled.KeyboardArrowUp,
-                fontSize = DigaUiDimensions.TextSizeButtonCompact,
+                fontSize = DigaUiDimensions.TextSizeDpadFlank,
                 shape =
                     RoundedCornerShape(
                         topStart = DigaUiDimensions.RadiusTargetFlankOuter,
@@ -868,9 +743,9 @@ private fun DPadCluster(onSend: SendCommand) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(DigaUiDimensions.HeightFlankDpadButton),
+                        .height(flankHeight),
                 icon = Icons.Filled.KeyboardArrowDown,
-                fontSize = DigaUiDimensions.TextSizeButtonCompact,
+                fontSize = DigaUiDimensions.TextSizeDpadFlank,
                 shape =
                     RoundedCornerShape(
                         topStart = DigaUiDimensions.RadiusTargetFlankInner,
@@ -889,57 +764,198 @@ private fun DPadCluster(onSend: SendCommand) {
     }
 }
 
+/**
+ * Unified Transport & VCR Deck card (3 rows).
+ * Combines main playback transport, shuttle/skip controls, and VCR-specific tracking + single
+ * unified Dubbing button without duplicating Play/Pause/Stop/Rew/FF/Rec/Eject keys.
+ */
 @Composable
-fun TransportSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_TRANSPORT) {
-        KeyRow(transportMainRow, onSend, height = DigaUiDimensions.HeightStandardButton)
-        KeyRow(transportSeekRow, onSend)
-    }
-}
-
-@Composable
-fun VcrSection(
-    activeMode: RemoteMode,
+fun TransportSection(
+    isVcrDeck: Boolean,
     onSend: SendCommand,
+    modifier: Modifier = Modifier,
 ) {
+    val transportMainRow =
+        remember(isVcrDeck) {
+            listOf(
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_PLAY,
+                    DigaUiStrings.CMD_LABEL_PLAY,
+                    OBC.PLAY,
+                    KeyStyle.Success,
+                    Icons.Filled.PlayArrow,
+                    weight = 1.2f,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_PAUSE,
+                    DigaUiStrings.CMD_LABEL_PAUSE,
+                    OBC.PAUSE,
+                    KeyStyle.Warning,
+                    Icons.Filled.Pause,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_STOP,
+                    DigaUiStrings.CMD_LABEL_STOP,
+                    OBC.STOP,
+                    KeyStyle.DangerDark,
+                    Icons.Filled.Stop,
+                    isVcr = isVcrDeck,
+                ),
+            )
+        }
+
+    val transportSeekRow =
+        remember(isVcrDeck) {
+            listOf(
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_SKIP_PREV,
+                    DigaUiStrings.CMD_LABEL_SKIP_PREV,
+                    OBC.SKIP_PREV,
+                    icon = Icons.Filled.SkipPrevious,
+                    iconOnly = true,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_REWIND,
+                    DigaUiStrings.CMD_LABEL_REWIND,
+                    OBC.REWIND,
+                    icon = Icons.Filled.FastRewind,
+                    iconOnly = true,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_FAST_FORWARD,
+                    DigaUiStrings.CMD_LABEL_FAST_FORWARD,
+                    OBC.FAST_FORWARD,
+                    icon = Icons.Filled.FastForward,
+                    iconOnly = true,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_SKIP_NEXT,
+                    DigaUiStrings.CMD_LABEL_SKIP_NEXT,
+                    OBC.SKIP_NEXT,
+                    icon = Icons.Filled.SkipNext,
+                    iconOnly = true,
+                    isVcr = isVcrDeck,
+                ),
+            )
+        }
+
+    val vcrToolsRow =
+        remember(isVcrDeck) {
+            val dubLabel = if (isVcrDeck) DigaUiStrings.BTN_DUB_VHS_TO_DVD else DigaUiStrings.BTN_DUB_DVD_TO_VHS
+            val dubCmdLabel = if (isVcrDeck) DigaUiStrings.CMD_LABEL_VCR_DUB_VHS_TO_DVD else DigaUiStrings.CMD_LABEL_VCR_DUB_DVD_TO_VHS
+            val dubObc = if (isVcrDeck) OBC.VCR_DUB_VHS_TO_DVD else OBC.VCR_DUB_DVD_TO_VHS
+            listOf(
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_VCR_TRACKING_DOWN,
+                    DigaUiStrings.CMD_LABEL_VCR_TRACKING_DOWN,
+                    OBC.VCR_TRACKING_MINUS,
+                    KeyStyle.Primary,
+                    isVcr = true,
+                ),
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_VCR_TRACKING_UP,
+                    DigaUiStrings.CMD_LABEL_VCR_TRACKING_UP,
+                    OBC.VCR_TRACKING_PLUS,
+                    KeyStyle.Primary,
+                    isVcr = true,
+                ),
+                RemoteKeySpec(
+                    dubLabel,
+                    dubCmdLabel,
+                    dubObc,
+                    KeyStyle.Accent,
+                    Icons.Filled.SwapHoriz,
+                    weight = 1.4f,
+                    isVcr = false,
+                ),
+            )
+        }
+
     DigaCard(
-        title = DigaUiStrings.SECTION_VCR_DECK,
-        accent = DigaAmber,
+        title = DigaUiStrings.SECTION_TRANSPORT,
+        modifier = modifier,
         trailing = {
             Text(
-                text = activeMode.label,
-                fontSize = DigaUiDimensions.TextSizeVfdStatus,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = if (isVcrDeck) DigaUiStrings.BADGE_DECK_VCR else DigaUiStrings.BADGE_DECK_DVD,
+                fontWeight = FontWeight.Bold,
+                fontSize = DigaUiDimensions.TextSizeVfdSub,
+                color = if (isVcrDeck) DigaAmber else DigaBlueLight,
             )
         },
     ) {
-        KeyRow(vcrDeckRow, onSend)
-        KeyRow(vcrTransportMainRow, onSend, height = DigaUiDimensions.HeightStandardButton)
-        KeyRow(vcrTransportSeekRow, onSend)
-        KeyRow(vcrTrackingRow, onSend)
-        KeyRow(vcrDubRow, onSend)
+        KeyRow(transportMainRow, onSend, height = DigaUiDimensions.HeightStandardButton)
+        KeyRow(transportSeekRow, onSend)
+        KeyRow(vcrToolsRow, onSend)
     }
 }
 
 @Composable
-fun EditingSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_EDITING_FEATURES) {
+fun EditingSection(
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.SECTION_EDITING_FEATURES,
+        modifier = modifier,
+    ) {
         KeyRow(editingPlaybackRow, onSend)
         KeyRow(editingToolsRow, onSend)
     }
 }
 
 @Composable
-fun RecordingSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_RECORDING_BROADCAST) {
+fun RecordingSection(
+    isVcrDeck: Boolean,
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
+) {
+    val recordingRow =
+        remember(isVcrDeck) {
+            listOf(
+                RemoteKeySpec(
+                    DigaUiStrings.BTN_REC,
+                    DigaUiStrings.CMD_LABEL_REC,
+                    OBC.REC,
+                    KeyStyle.Danger,
+                    Icons.Filled.FiberManualRecord,
+                    weight = 1.2f,
+                    isVcr = isVcrDeck,
+                ),
+                RemoteKeySpec(DigaUiStrings.BTN_REC_MODE, DigaUiStrings.CMD_LABEL_REC_MODE, OBC.REC_MODE, weight = 1.5f),
+                RemoteKeySpec(DigaUiStrings.BTN_EXT_LINK, DigaUiStrings.CMD_LABEL_EXT_LINK, OBC.EXT_LINK, weight = 1.1f),
+            )
+        }
+
+    DigaCard(
+        title = DigaUiStrings.SECTION_RECORDING_BROADCAST,
+        modifier = modifier,
+    ) {
         KeyRow(recordingRow, onSend, height = DigaUiDimensions.HeightStandardButton)
     }
 }
 
 @Composable
-fun KeypadSection(onSend: SendCommand) {
-    DigaCard(title = DigaUiStrings.SECTION_NUMERIC_KEYPAD) {
-        keypadRows.forEach { row -> KeyRow(row, onSend, height = DigaUiDimensions.HeightKeypadButton) }
+fun KeypadSection(
+    onSend: SendCommand,
+    modifier: Modifier = Modifier,
+) {
+    DigaCard(
+        title = DigaUiStrings.SECTION_NUMERIC_KEYPAD,
+        modifier = modifier,
+    ) {
+        keypadRows.forEach { row ->
+            KeyRow(
+                keys = row,
+                onSend = onSend,
+                height = DigaUiDimensions.HeightKeypadButton,
+                fontSize = DigaUiDimensions.TextSizeKeypadDigit,
+            )
+        }
         KeyRow(keypadFooterRow, onSend, height = DigaUiDimensions.HeightKeypadButton)
     }
 }

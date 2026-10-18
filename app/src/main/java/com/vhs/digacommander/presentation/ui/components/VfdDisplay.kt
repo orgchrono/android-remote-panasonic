@@ -17,12 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import com.vhs.digacommander.presentation.theme.DigaBlueLight
@@ -48,8 +50,8 @@ fun IrLinkStatus.indicatorColor(): Color =
 
 /**
  * Single-line Vacuum Fluorescent Display (VFD) status bar.
- * Combines the IR emitter status indicator, fluorescent command telemetry, and active recorder
- * profile/channel badge into one compact horizontal bar so maximum screen height remains for panels.
+ * Combines the IR emitter status indicator, fluorescent command telemetry, and active deck/channel
+ * badge into one compact horizontal bar, adapting cleanly on narrow smartphone screens.
  */
 @Composable
 fun VfdDisplay(
@@ -61,6 +63,10 @@ fun VfdDisplay(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(DigaUiDimensions.RadiusButtonCompact)
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val showSubText = screenWidth >= DigaUiDimensions.BreakpointTabletCards
+    val showFullBadge = screenWidth >= DigaUiDimensions.BreakpointPhoneCompact
+
     Row(
         modifier =
             modifier
@@ -115,7 +121,7 @@ fun VfdDisplay(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (subText.isNotBlank()) {
+            if (showSubText && subText.isNotBlank()) {
                 Text(
                     text = "${DigaUiStrings.VFD_SEPARATOR}$subText",
                     color = VfdText,
@@ -127,8 +133,8 @@ fun VfdDisplay(
             }
         }
 
-        // Right: Active Profile & Channel Badge
-        if (badgeText.isNotBlank()) {
+        // Right: Active Deck & Channel Badge
+        if (showFullBadge && badgeText.isNotBlank()) {
             Surface(
                 shape = RoundedCornerShape(DigaUiDimensions.RadiusBadge),
                 color = DigaSurfaceVariant,
