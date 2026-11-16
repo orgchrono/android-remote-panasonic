@@ -22,7 +22,7 @@ import com.vhs.digacommander.data.model.RemoteMode
 import com.vhs.digacommander.presentation.constant.DigaUiDimensions
 
 /**
- * Main Remote Control tab mirroring the physical Panasonic DIGA controller.
+ * Main Remote Control tab mirroring the physical Panasonic DIGA controller (`EUR7659Y60` / `EUR7659Y70`).
  *
  * Layout adapts to the viewport:
  * - On tablets / wide screens (`screenWidthDp >= BreakpointWide`), renders a mathematically balanced

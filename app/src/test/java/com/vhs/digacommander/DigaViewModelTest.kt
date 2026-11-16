@@ -117,13 +117,20 @@ class DigaViewModelTest {
             val viewModel = DigaViewModel(fakeTransmitter, pipeline, ioDispatcher = testDispatcher)
 
             viewModel.sendCommand("PLAY", PanasonicDigaCatalog.OBC.PLAY, isVcr = false)
+            viewModel.sendCommand("STOP", PanasonicDigaCatalog.OBC.STOP, isVcr = false)
+            viewModel.sendCommand("AUDIO", PanasonicDigaCatalog.OBC.AUDIO, isVcr = false)
+            viewModel.sendCommand("DISPLAY", PanasonicDigaCatalog.OBC.DISPLAY, isVcr = false)
+            viewModel.sendCommand("ENTER", PanasonicDigaCatalog.OBC.ENTER_OK, isVcr = false)
+            viewModel.sendCommand("FUNCTIONS", PanasonicDigaCatalog.OBC.FUNCTIONS, isVcr = false)
+            viewModel.sendCommand("MEDIA_SERVER", PanasonicDigaCatalog.OBC.MEDIA_SERVER, isVcr = false)
             advanceUntilIdle()
 
-            assertEquals(1, fakeTransmitter.transmittedKaseikyo.size)
-            val transmission = fakeTransmitter.transmittedKaseikyo[0]
-            assertEquals(DigaDevice.DVD_HDD, transmission.first)
-            assertEquals(RemoteMode.MODE_1, transmission.second)
-            assertEquals(PanasonicDigaCatalog.OBC.PLAY, transmission.third)
+            assertEquals(7, fakeTransmitter.transmittedKaseikyo.size)
+            assertEquals(
+                listOf(0x0A, 0x00, 0x33, 0x92, 0x82, 0x57, 0x04),
+                fakeTransmitter.transmittedKaseikyo.map { it.third },
+            )
+            assertTrue(fakeTransmitter.transmittedKaseikyo.all { it.first == DigaDevice.DVD_HDD && it.second == RemoteMode.MODE_1 })
             assertEquals(DigaUiStrings.VFD_PULSE_SENT, viewModel.uiState.value.vfdSubText)
         }
 

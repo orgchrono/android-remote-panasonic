@@ -9,9 +9,24 @@ import com.vhs.digacommander.data.model.RemoteMode
  */
 object KaseikyoProtocol {
     const val CARRIER_FREQUENCY_HZ: Int = DigaTimings.CARRIER_MATSUSHITA_HZ
+    const val SUBDEVICE_PRIMARY: Int = 0x00
+    const val SUBDEVICE_EXTENDED: Int = 0x01
 
     private const val OEM_1: Int = 0x02
     private const val OEM_2: Int = 0x20
+
+    private fun buildPayload(
+        device: Int,
+        mode: RemoteMode,
+        command: Int,
+        subdeviceGroup: Int,
+    ): IntArray {
+        val devByte = device and 0xFF
+        val subByte = (mode.subdevice or (subdeviceGroup and 0x0F)) and 0xFF
+        val cmdByte = command and 0xFF
+        val checksum = devByte xor subByte xor cmdByte
+        return intArrayOf(OEM_1, OEM_2, devByte, subByte, cmdByte, checksum)
+    }
 
     /**
      * Pure function synthesizing an alternating Mark/Space interval array (100 elements).
@@ -19,18 +34,16 @@ object KaseikyoProtocol {
      * @param device Target hardware device (e.g. DVD_HDD 0xB0 or VCR 0x90).
      * @param mode Target remote control channel mode (MODE_1, MODE_2, or MODE_3).
      * @param command 8-bit Original Button Code (OBC).
+     * @param subdeviceGroup Low nibble of byte 3 ([SUBDEVICE_PRIMARY] 0x00 or [SUBDEVICE_EXTENDED] 0x01 for Teletext/JDM service).
      * @return IntArray of exactly 100 microsecond intervals.
      */
     fun synthesizePulsePattern(
         device: Int = DigaDevice.DVD_HDD.id,
         mode: RemoteMode = RemoteMode.MODE_1,
         command: Int,
+        subdeviceGroup: Int = SUBDEVICE_PRIMARY,
     ): IntArray {
-        val devByte = device and 0xFF
-        val subByte = mode.subdevice and 0xFF
-        val cmdByte = command and 0xFF
-        val checksum = devByte xor subByte xor cmdByte
-        val payload = intArrayOf(OEM_1, OEM_2, devByte, subByte, cmdByte, checksum)
+        val payload = buildPayload(device, mode, command, subdeviceGroup)
 
         val pattern = IntArray(DigaTimings.KASEIKYO_FRAME_TRANSITION_COUNT)
         var index = 0
@@ -62,12 +75,9 @@ object KaseikyoProtocol {
         device: Int = DigaDevice.DVD_HDD.id,
         mode: RemoteMode = RemoteMode.MODE_1,
         command: Int,
+        subdeviceGroup: Int = SUBDEVICE_PRIMARY,
     ): String {
-        val devByte = device and 0xFF
-        val subByte = mode.subdevice and 0xFF
-        val cmdByte = command and 0xFF
-        val checksum = devByte xor subByte xor cmdByte
-        val payload = intArrayOf(OEM_1, OEM_2, devByte, subByte, cmdByte, checksum)
+        val payload = buildPayload(device, mode, command, subdeviceGroup)
 
         val words = ArrayList<String>(DigaTimings.PRONTO_TOTAL_WORD_COUNT)
         words.add("0000") // Learned raw format

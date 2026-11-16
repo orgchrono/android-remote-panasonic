@@ -72,7 +72,7 @@ Detailed engineering documentation is organized inside the [`docs/`](docs/) dire
   * Physics of the 48-bit Matsushita Kaseikyo protocol ($37.010\text{ kHz}$ carrier, pulse-width modulation, XOR checksum architecture).
   * Comprehensive table of 17 service hacks and diagnostics with SuperH SH-4 microcontroller internal operations.
   * Self-diagnostic decoding guide for `U**` (operational), `H**` (servo/hardware), and `F**` (critical bus/EEPROM) error codes.
-  * Complete 52-command Pronto Hex cross-reference table.
+  * Verified Panasonic DIGA (`02 20 B0 00`/`01`) OBC and Pronto Hex cross-reference table (audited against Flipper-IRDB `Panasonic_DVD_TV.ir` & `Panasonic_EUR7621070.ir`).
 * 📄 **[`docs/PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md`](docs/PANASONIC_DIGA_MULTI_MODEL_EXPANSION_PLAN.md)**:
   * Multi-generation compatibility matrix across DIGA lines (E, ES, EH, EX, EZ, DMR-BW/XW/BWT, and VHS/DVD Combos).
   * Dual-deck addressing for VHS mechanisms (Device `0x90`) and DVD/HDD mechanisms (Device `0xB0`).
@@ -93,7 +93,6 @@ app/src/main/java/com/vhs/digacommander/
 │   │   ├── IrSignal.kt                 # Immutable carrier frequency + pulse microsecond array
 │   │   ├── RemoteMode.kt               # Enum (MODE_1 = 0x00, MODE_2 = 0x10, MODE_3 = 0x20)
 │   │   ├── DigaDevice.kt               # Enum (DVD_HDD = 0xB0, VCR = 0x90, TV = 0x01)
-│   │   ├── DigaModelProfile.kt         # Enum (DMR_EH55, DMR_ES10_ES15, COMBO_VHS_DVD, UNIVERSAL)
 │   │   ├── MacroCommand.kt             # Immutable macro step definition
 │   │   └── MacroExecutionState.kt      # Sealed interface (Idle, Running, Completed, Error, Cancelled)
 │   ├── ir/
@@ -101,7 +100,7 @@ app/src/main/java/com/vhs/digacommander/
 │   │   ├── ProntoHexConverter.kt       # Pure functional parser converting Pronto strings to IrSignal
 │   │   └── ConsumerIrTransmitter.kt    # Hardware abstraction over Android ConsumerIrManager
 │   └── catalog/
-│       └── PanasonicDigaCatalog.kt     # Master catalog: 52 OBC codes, Pronto strings, and bench macros
+│       └── PanasonicDigaCatalog.kt     # Master catalog: hardware-verified OBC codes (0x00/0x01), Pronto strings, and bench macros
 ├── domain/
 │   └── pipeline/
 │       └── DigaMacroPipeline.kt        # Serialized Mutex coroutine pipeline with anti-brick delays
@@ -115,7 +114,7 @@ app/src/main/java/com/vhs/digacommander/
         ├── components/
         │   └── VfdDisplay.kt           # Parametric retro fluorescent VFD panel
         └── tabs/
-            ├── RemoteTab.kt            # Tab 1: EUR7729KG0 mirror, profile selector, mode switcher, VCR deck
+            ├── RemoteTab.kt            # Tab 1: EUR7659Y60 / EUR7659Y70 mirror, mode switcher, VCR deck
             ├── ServiceTab.kt           # Tab 2: Service bench diagnostics, laser hour meter, EEPROM slots
             └── HacksTab.kt             # Tab 3: Automated OSD recovery, Region Free unlock, Child Lock override
 ```

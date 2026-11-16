@@ -53,8 +53,8 @@ $$\text{Frame} = [\text{OEM}_1]\,[\text{OEM}_2]\,[\text{Device}]\,[\text{Subdevi
 
 Depending on the operation being executed, the following remote control transmitters are utilized:
 
-### 3.1 Standard Physical Remote (EUR7729KG0)
-- **Included With**: DMR-EH55, DMR-EH55S, DMR-EH55P.
+### 3.1 Official Physical Remote (`EUR7659Y60` / `EUR7659Y70`)
+- **Included With**: DMR-EH55, DMR-EH55S, DMR-EH55P, DMR-EH55EC/EG (functional equivalent `EUR7659Y70`; regional sibling `EUR7729KG0`).
 - **Transmitter Type**: Standard handheld consumer IR remote emitting Kaseikyo 48-bit codes.
 - **Capabilities**: Navigating standard disc menus, playback deck, timer programming, manual skip (+30s), replay (-10s), time slip, and numeric entry (1 to 0).
 - **Limitations**: **Lacks discrete service keys**. The physical remote cannot transmit non-standard commands (such as `MEDIA SERVER / 0x04` or discrete power-on/off codes), making standalone execution of advanced multi-region hacks impossible on the original plastic remote alone.
@@ -62,7 +62,7 @@ Depending on the operation being executed, the following remote control transmit
 ### 3.2 Programmable Android Consumer IR Transmitter (SM-T805M / DIGA Commander)
 - **Hardware**: Samsung Galaxy Tab S 10.5 LTE (SM-T805M) or Galaxy S4/S5/Note 4 featuring a built-in hardware Consumer IR (CIR) LED emitter (`android.hardware.ConsumerIrManager`).
 - **Software**: **Diga Commander** (Native Kotlin Jetpack Compose app) or **irplus** using the supplied `Panasonic_DMR_EH55_Commander.irplus` profile.
-- **Capabilities**: Capable of transmitting all 52 discrete Panasonic IR commands, as well as chaining automated macro pipelines with strict monotonic microsecond/millisecond delays.
+- **Capabilities**: Capable of transmitting all verified discrete Panasonic IR commands (`Subdevice 0x00` primary deck + `Subdevice 0x01` extended Teletext/JDM service bank + `0x90` VCR deck + `0x01` TV control), as well as chaining automated macro pipelines with strict monotonic microsecond/millisecond delays.
 
 ---
 
@@ -97,7 +97,7 @@ Depending on the operation being executed, the following remote control transmit
 | Property | Specification |
 |:---|:---|
 | **Target Function** | Enter Low-Level Service Diagnostic State |
-| **Required Remote** | Original Remote (EUR7729KG0) or Android DIGA Commander |
+| **Required Remote** | Official Remote (`EUR7659Y60` / `EUR7659Y70`) or Android DIGA Commander |
 | **Initial Unit State** | Unit powered **ON**; Deck in **STOP** mode; Optical Tray closed and empty |
 | **Method A (Front Panel)**| On the physical front panel of the recorder, press and hold **`[STOP]`**, and simultaneously press and hold **`[PLAY ▶]`** for at least **5 seconds**. |
 | **Method B (Standby Entry)**| With unit in **Standby** (Off), press and hold **`[STOP]`** on front panel, and press **`[CH ▲]`** on front panel for at least **5 seconds**. |
@@ -391,52 +391,58 @@ When querying error registers via Code `01` or Code `65`, the following table de
 
 ---
 
-## 6. Complete 52-Command Panasonic IR Quick Reference Table
+## 6. Verified Panasonic DIGA IR Quick Reference Table
 
-All commands use Matsushita Kaseikyo 48-bit with **Device `0xB0`** and **Subdevice `0x00`** modulated at **37.010 kHz** (`0070`).
+All primary commands use Matsushita Kaseikyo 48-bit with **Device `0xB0`** and **Subdevice `0x00`** (Mode 1) modulated at **37.010 kHz** (`0070`), verified against physical Flipper-IRDB hardware captures (`Panasonic_DVD_TV.ir`, `Panasonic_EUR7621070.ir`).
+
+### 6.1 Primary DVD / HDD Recorder Deck (`Device 0xB0`, `Subdevice 0x00`)
 
 | Constant Identifier | Command (Hex) | Checksum (Hex) | Physical Remote Equivalent | Primary Function Description |
 |:---|:---:|:---:|:---|:---|
 | `POWER` | `0x3D` | `0x8D` | Power ⏻ | Toggle Main Power (Standby / On) |
 | `POWER_ON` | `0x3E` | `0x8E` | Discrete | Discrete Power ON Only |
 | `POWER_OFF` | `0x3F` | `0x8F` | Discrete | Discrete Power OFF (Standby) Only |
-| `EJECT` | `0x39` | `0x89` | Open / Close ⏏ | Open or Close Optical Disc Tray |
-| `STATUS` | `0x29` | `0x99` | Status | On-screen OSD telemetry display |
+| `EJECT` | `0x01` | `0xB1` | Open / Close ⏏ | Standard Kaseikyo DVD Eject (`EUR7621070.ir`; `0x39` on select combo/legacy decks) |
+| `STATUS` | `0x5F` | `0xEF` | Status | On-screen OSD telemetry display (`Panasonic_DVD_TV.ir`; legacy errata listed `0x29`/`0x21`) |
 | `DISPLAY` | `0x92` | `0x22` | Display | Toggle on-screen playback bit-rate & time |
 | `DRIVE_SELECT` | `0x2C` | `0x9C` | Drive Select | Cycle active drive: HDD $\to$ DVD $\to$ SD/MMC |
 | `DIRECT_NAVIGATOR` | `0x9B` | `0x2B` | Direct Navigator | Open recorded title thumbnail index |
 | `FUNCTIONS` | `0x57` | `0xE7` | Functions | Open DIGA main graphical setup menu |
-| `TOP_MENU` | `0x25` | `0x95` | Top Menu | Jump to DVD-Video root title menu |
+| `TOP_MENU` | `0x9B` | `0x2B` | Top Menu | Jump to DVD-Video root title menu (`Top_menu` = `Direct_navigator` in Flipper capture) |
 | `OPTION_SUB_MENU` | `0x80` | `0x30` | Option | Open context submenu for active title |
+| `SETUP` | `0x94` | `0x24` | Setup | Direct Setup / Preferences menu (`Panasonic_DVD_TV.ir`) |
 | `UP` | `0x85` | `0x35` | Navigation ▲ | Cursor navigation Up |
 | `DOWN` | `0x86` | `0x36` | Navigation ▼ | Cursor navigation Down |
 | `LEFT` | `0x87` | `0x37` | Navigation ◀ | Cursor navigation Left |
 | `RIGHT` | `0x88` | `0x38` | Navigation ▶ | Cursor navigation Right |
 | `ENTER_OK` | `0x82` | `0x32` | OK / Enter | Confirm selection / execute menu item |
 | `RETURN` | `0x81` | `0x31` | Return | Return to previous menu level |
-| `EXIT` | `0x51` | `0xE1` | Exit | Clear all on-screen graphical menus |
-| `GUIDE` | `0x60` | `0xD0` | Guide | Open TV Guide / EPG programming grid |
+| `EXIT` | `0xA5` | `0x15` | Exit | Clear all on-screen graphical menus (distinct from `REC_MODE` `0x51`) |
+| `CANCEL` | `0x83` | `0x33` | Cancel / Clear | Cancel programmed timer entry or active prompt |
+| `GUIDE` | `0x7C` | `0xCC` | Guide / Schedule | Open Schedule / Timer Grid (`Schedule` in `Panasonic_DVD_TV.ir`; EPG models also use `0x60`) |
 | `PROG_CHECK` | `0x7C` | `0xCC` | Prog / Check | Display scheduled timer recording list |
 | `PLAY` | `0x0A` | `0xBA` | Play ▶ | Begin playback of selected title / media |
 | `STOP` | `0x00` | `0xB0` | Stop ■ | Halt playback or active recording |
 | `PAUSE` | `0x06` | `0xB6` | Pause ❚❚ | Freeze playback or pause recording |
-| `FAST_FORWARD` | `0x4A` | `0xFA` | Fast Forward ▶▶ | 5-speed progressive forward cue search |
-| `REWIND` | `0x49` | `0xF9` | Rewind ◀◀ | 5-speed progressive reverse review search |
-| `SKIP_NEXT` | `0x05` | `0xB5` | Next ▶\| | Skip forward to next chapter / title marker |
-| `SKIP_PREV` | `0x04` | `0xB4` | Prev \|◀ | Skip backward to previous chapter marker |
+| `FAST_FORWARD` | `0x05` | `0xB5` | Fast Forward ▶▶ | Progressive forward cue search (`Ff` in hardware capture) |
+| `REWIND` | `0x04` | `0xB4` | Rewind ◀◀ | Progressive reverse review search (`Rev` in hardware capture) |
+| `SKIP_NEXT` | `0x4A` | `0xFA` | Next ▶\| | Skip forward to next chapter / title marker |
+| `SKIP_PREV` | `0x49` | `0xF9` | Prev \|◀ | Skip backward to previous chapter marker |
 | `TIME_SLIP` | `0x4B` | `0xFB` | Time Slip | Simultaneous playback of recorded stream |
-| `MANUAL_SKIP_30S` | `0x4C` | `0xFC` | Manual Skip (+30s) | Instant commercial skip forward 30 seconds |
-| `MANUAL_REPLAY_10S` | `0x8B` | `0x3B` | Manual Replay (-10s) | Instant instant replay backward 10 seconds |
+| `MANUAL_SKIP_30S` | `0x4C` | `0xFC` | Manual Skip (+30s) | Instant commercial skip forward 30 seconds (`CM_SKIP`) |
+| `MANUAL_REPLAY_10S` | `0x8B` | `0x3B` | Manual Replay (-10s) | Instant replay backward 10 seconds (`Quick_replay`) |
 | `CREATE_CHAPTER` | `0x58` | `0xE8` | Create Chapter | Insert manual chapter division mark |
 | `DELETE_TITLE` | `0x44` | `0xF4` | Delete | Delete selected recorded title |
 | `REC` | `0x08` | `0xB8` | Rec ● | Begin immediate recording on active drive |
 | `REC_MODE` | `0x51` | `0xE1` | Rec Mode | Cycle encoding quality: XP $\to$ SP $\to$ LP $\to$ EP |
+| `F_REC` | `0xC7` | `0x77` | Flexible Rec | Flexible Recording fit-to-disc bitrate calculator (`Panasonic_DVD_TV.ir`) |
 | `EXT_LINK` | `0x23` | `0x93` | Ext Link | Enable Scart/AV auto-record satellite sync |
 | `INPUT_SELECT` | `0x50` | `0xE0` | Input Select | Cycle inputs: AV1 $\to$ AV2 $\to$ AV3 $\to$ AV4 $\to$ DV |
 | `CH_UP` | `0x34` | `0x84` | Channel ▲ | Increment tuner channel |
 | `CH_DOWN` | `0x35` | `0x85` | Channel ▼ | Decrement tuner channel |
+| `ADD_DEL_CH` | `0x36` | `0x86` | Add / Del Ch | Add or remove tuner channel from scan list |
 | `AUDIO` | `0x33` | `0x83` | Audio | Cycle audio streams: Stereo $\to$ L $\to$ R $\to$ SAP |
-| `SUBTITLE` | `0x71` | `0xC1` | Subtitle | Toggle on-screen closed captions / subtitles |
+| `SUBTITLE` | `0x91` | `0x21` | Subtitle | Toggle subtitles (`EUR7621070.ir`; legacy captures also report `0x71`) |
 | `DIGIT_1` | `0x10` | `0xA0` | Number Key 1 | Numeric input 1 / Service code 1 |
 | `DIGIT_2` | `0x11` | `0xA1` | Number Key 2 | Numeric input 2 / Service code 2 |
 | `DIGIT_3` | `0x12` | `0xA2` | Number Key 3 | Numeric input 3 / Service code 3 |
@@ -448,7 +454,27 @@ All commands use Matsushita Kaseikyo 48-bit with **Device `0xB0`** and **Subdevi
 | `DIGIT_9` | `0x18` | `0xA8` | Number Key 9 | Numeric input 9 / Service code 9 |
 | `DIGIT_0` | `0x19` | `0xA9` | Number Key 0 | Numeric input 0 / Service code 0 |
 | `MEDIA_SERVER` | `0x04` | `0xB4` | Discrete Service Key | Service trigger byte for region unlock |
-| `CANCEL` | `0x25` | `0x95` | Cancel / Clear | Cancel programmed timer entry |
+
+### 6.2 Extended Teletext & JDM Service Bank (`Device 0xB0`, `Subdevice 0x01`)
+
+Wire format: `02 20 B0 01 <CMD> <B0 ^ 01 ^ CMD>` (combined with `RemoteMode` via `mode.subdevice or 0x01`).
+
+| Constant Identifier | Command (Hex) | Checksum (Hex) | Function Description |
+|:---|:---:|:---:|:---|
+| `TELETEXT_RED` | `0x41` | `0xF0` | Teletext / Interactive Red button |
+| `TELETEXT_GREEN` | `0x42` | `0xF3` | Teletext / Interactive Green button |
+| `TELETEXT_YELLOW` | `0x43` | `0xF2` | Teletext / Interactive Yellow button |
+| `TELETEXT_BLUE` | `0x44` | `0xF5` | Teletext / Interactive Blue / Data button |
+| `JDM_ND2_SERVICE` | `0x82` | `0x33` | Japanese Domestic Market (JDM) ND2 service diagnostic key |
+
+### 6.3 Hardware Capture Audit Notes (Flipper-IRDB Cross-Check)
+
+- **`EJECT` (`0x01`)**: Verified in `Panasonic_EUR7621070.ir` (`02 20 B0 00 01 B1`); `0x39` appears only on select legacy/combo decks.
+- **`STATUS` (`0x5F`)**: Verified in `Panasonic_DVD_TV.ir`; supersedes earlier unverified notes listing `0x29` or `0x21`.
+- **`SUBTITLE` (`0x91`)**: Verified in `Panasonic_EUR7621070.ir`; supersedes legacy table entries (`0x71` / `0x28`).
+- **`REWIND` (`0x04`) / `FAST_FORWARD` (`0x05`) vs. `SKIP_PREV` (`0x49`) / `SKIP_NEXT` (`0x4A`)**: Earlier drafts inverted shuttle search (`0x04`/`0x05`) with chapter skip (`0x49`/`0x4A`); verified hardware captures confirm `0x04`/`0x05` are `Rev`/`Ff` and `0x49`/`0x4A` are `Prev`/`Next`.
+- **`TOP_MENU` (`0x9B`) & `GUIDE` / `SCHEDULE` (`0x7C`)**: Match `Top_menu` (`0x9B`) and `Schedule` (`0x7C`) in `Panasonic_DVD_TV.ir`.
+- **`CANCEL` (`0x83`) & `EXIT` (`0xA5`)**: `CANCEL` verified at `0x83`; `EXIT` mapped to `0xA5` to avoid colliding with `REC_MODE` (`0x51`).
 
 ---
 
