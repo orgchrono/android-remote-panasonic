@@ -278,7 +278,7 @@ fun SystemSection(
         ) {
             RemoteKey(
                 label = DigaUiStrings.BTN_DRIVE_SELECT_ALL,
-                onClick = { onSend(DigaUiStrings.CMD_LABEL_DRIVE_SELECT, OBC.DRIVE_SELECT, isVcrDeck) },
+                onClick = { onSend(DigaUiStrings.CMD_LABEL_DRIVE_SELECT, OBC.DRIVE_SELECT, false) },
                 modifier = Modifier.weight(1.1f),
                 style = KeyStyle.Primary,
                 icon = Icons.Filled.Autorenew,
@@ -820,7 +820,7 @@ fun TransportSection(
                 RemoteKeySpec(
                     DigaUiStrings.BTN_REWIND,
                     DigaUiStrings.CMD_LABEL_REWIND,
-                    OBC.REWIND,
+                    if (isVcrDeck) OBC.VCR_REWIND else OBC.REWIND,
                     icon = Icons.Filled.FastRewind,
                     iconOnly = true,
                     isVcr = isVcrDeck,
@@ -828,7 +828,7 @@ fun TransportSection(
                 RemoteKeySpec(
                     DigaUiStrings.BTN_FAST_FORWARD,
                     DigaUiStrings.CMD_LABEL_FAST_FORWARD,
-                    OBC.FAST_FORWARD,
+                    if (isVcrDeck) OBC.VCR_FAST_FORWARD else OBC.FAST_FORWARD,
                     icon = Icons.Filled.FastForward,
                     iconOnly = true,
                     isVcr = isVcrDeck,

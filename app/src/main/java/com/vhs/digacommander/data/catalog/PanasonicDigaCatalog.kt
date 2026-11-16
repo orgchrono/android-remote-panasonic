@@ -42,12 +42,18 @@ object PanasonicDigaCatalog {
         const val RIGHT = 0x88
         const val ENTER_OK = 0x82
         const val RETURN = 0x81
-        const val EXIT = 0xA5
+
+        /** Extended bank Exit (`02 20 B0 01 51 E0`, EX/BWT/Combo; EH55 uses `RETURN = 0x81`). */
+        const val EXIT = 0x51
         const val CANCEL = 0x83
 
-        /** Maps to `Schedule` (`0x7C`) in `Panasonic_DVD_TV.ir` (regional EPG models also use `0x60`). */
-        const val GUIDE = 0x7C
+        /** Digital EPG Guide (`0x60` across EH55/EH65/EH75V/EX77/BWT720). */
+        const val GUIDE = 0x60
+
+        /** Schedule / Prog Check (`0x7C` in `Panasonic_DVD_TV.ir`, EH55, ES10/ES15, ES30V, EX77). */
         const val PROG_CHECK = 0x7C
+        const val SCHEDULE = 0x7C
+        const val INFO = 0x66
         const val PLAY = 0x0A
         const val STOP = 0x00
         const val PAUSE = 0x06
@@ -64,13 +70,18 @@ object PanasonicDigaCatalog {
         const val REC_MODE = 0x51
         const val F_REC = 0xC7
         const val EXT_LINK = 0x23
+        const val DIRECT_TV_REC = 0x59
+        const val DUBBING = 0x5E
         const val INPUT_SELECT = 0x50
+        const val INPUT_HDD = 0xC2
+        const val INPUT_DVD = 0xC3
+        const val INPUT_SD = 0x2B
         const val CH_UP = 0x34
         const val CH_DOWN = 0x35
         const val ADD_DEL_CH = 0x36
         const val AUDIO = 0x33
 
-        /** Verified in `EUR7621070.ir` (alternative/legacy captures also list `0x71`). */
+        /** Verified in `EUR7621070.ir` (`0x91` S=0x00 DVD; `EXT_SUBTITLE = 0x71` S=0x01 EX/BWT). */
         const val SUBTITLE = 0x91
         const val DIGIT_1 = 0x10
         const val DIGIT_2 = 0x11
@@ -86,22 +97,37 @@ object PanasonicDigaCatalog {
         /** Discrete commit pulse (`0x04`) for the 12-step Multi-Region unlock sequence. */
         const val MEDIA_SERVER = 0x04
 
-        // TV control commands (Device 0x01)
+        // TV control commands (Device 0x80)
+        const val TV_POWER = 0x3D
+        const val TV_INPUT_AV = 0x05
         const val VOL_UP = 0x20
         const val VOL_DOWN = 0x21
+        const val TV_MUTE = 0x32
+        const val TV_CH_UP = 0x34
+        const val TV_CH_DOWN = 0x35
 
-        // VCR deck commands (Device 0x90)
-        const val VCR_TRACKING_PLUS = 0x1A
-        const val VCR_TRACKING_MINUS = 0x1B
-        const val VCR_DUB_VHS_TO_DVD = 0xEC
-        const val VCR_DUB_DVD_TO_VHS = 0xED
+        // VCR / Combo deck commands (Device 0x90 primary or 0xB0 combo)
+        const val VCR_REWIND = 0x02
+        const val VCR_FAST_FORWARD = 0x03
+        const val VCR_TRACKING_PLUS = 0xB1
+        const val VCR_TRACKING_MINUS = 0xB2
+        const val VCR_TV = 0x36
+        const val VCR_INPUT_SELECT = 0xC0
+        const val VCR_INPUT_VHS = 0xE2 // Device 0x90, Subdevice 0x05
+        const val VCR_DVD_TOGGLE = 0xE0 // Device 0x90, Subdevice 0x05 (NV-VP30/31)
+        const val VCR_DUB_VHS_TO_DVD = 0x30 // Device 0xB0 (DubbingVHS / DubVcr)
+        const val VCR_DUB_DVD_TO_VHS = 0x31 // Device 0xB0 (DubbingDVD / DubDvd)
 
-        // Extended Teletext / JDM Service bank (Subdevice 0x01: 02 20 B0 01 <cmd> <B0 ^ 01 ^ cmd>)
+        // Extended Teletext / Combo / JDM Service bank (Subdevice 0x01: 02 20 <DEV> 01 <cmd> <CHK>)
         const val TELETEXT_RED = 0x41
         const val TELETEXT_GREEN = 0x42
         const val TELETEXT_YELLOW = 0x43
         const val TELETEXT_BLUE = 0x44
+        const val EXT_TELETEXT = 0x70
+        const val EXT_SUBTITLE = 0x71
+        const val COMBO_VCR_TV = 0x7E
         const val JDM_ND2_SERVICE = 0x82
+        const val VCR_EXIT = 0x66 // Device 0x90, Subdevice 0x01
     }
 
     /**
@@ -133,10 +159,11 @@ object PanasonicDigaCatalog {
     val RIGHT = getProntoHex(OBC.RIGHT)
     val ENTER_OK = getProntoHex(OBC.ENTER_OK)
     val RETURN = getProntoHex(OBC.RETURN)
-    val EXIT = getProntoHex(OBC.EXIT)
+    val EXIT = getProntoHex(OBC.EXIT, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_EXTENDED)
     val CANCEL = getProntoHex(OBC.CANCEL)
     val GUIDE = getProntoHex(OBC.GUIDE)
     val PROG_CHECK = getProntoHex(OBC.PROG_CHECK)
+    val INFO = getProntoHex(OBC.INFO)
     val PLAY = getProntoHex(OBC.PLAY)
     val STOP = getProntoHex(OBC.STOP)
     val PAUSE = getProntoHex(OBC.PAUSE)
@@ -172,6 +199,17 @@ object PanasonicDigaCatalog {
     val MEDIA_SERVER = getProntoHex(OBC.MEDIA_SERVER)
     val VOL_UP = getProntoHex(OBC.VOL_UP, device = DigaDevice.TV)
     val VOL_DOWN = getProntoHex(OBC.VOL_DOWN, device = DigaDevice.TV)
+    val TV_POWER = getProntoHex(OBC.TV_POWER, device = DigaDevice.TV)
+    val TV_INPUT_AV = getProntoHex(OBC.TV_INPUT_AV, device = DigaDevice.TV)
+    val DUBBING = getProntoHex(OBC.DUBBING)
+    val VCR_REWIND = getProntoHex(OBC.VCR_REWIND, device = DigaDevice.VCR)
+    val VCR_FAST_FORWARD = getProntoHex(OBC.VCR_FAST_FORWARD, device = DigaDevice.VCR)
+    val VCR_TRACKING_PLUS = getProntoHex(OBC.VCR_TRACKING_PLUS, device = DigaDevice.VCR)
+    val VCR_TRACKING_MINUS = getProntoHex(OBC.VCR_TRACKING_MINUS, device = DigaDevice.VCR)
+    val VCR_INPUT_VHS = getProntoHex(OBC.VCR_INPUT_VHS, device = DigaDevice.VCR, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_COMBO_AUX)
+    val VCR_DUB_VHS_TO_DVD = getProntoHex(OBC.VCR_DUB_VHS_TO_DVD)
+    val VCR_DUB_DVD_TO_VHS = getProntoHex(OBC.VCR_DUB_DVD_TO_VHS)
+    val COMBO_VCR_TV = getProntoHex(OBC.COMBO_VCR_TV, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_EXTENDED)
     val TELETEXT_RED = getProntoHex(OBC.TELETEXT_RED, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_EXTENDED)
     val TELETEXT_GREEN = getProntoHex(OBC.TELETEXT_GREEN, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_EXTENDED)
     val TELETEXT_YELLOW = getProntoHex(OBC.TELETEXT_YELLOW, subdeviceGroup = KaseikyoProtocol.SUBDEVICE_EXTENDED)

@@ -31,6 +31,7 @@ class FakeIrTransmitter(
 ) : IrTransmitter {
     val transmittedPronto = mutableListOf<String>()
     val transmittedKaseikyo = mutableListOf<Triple<DigaDevice, RemoteMode, Int>>()
+    val transmittedSignals = mutableListOf<IrSignal>()
 
     override var config: IrTransmitConfig = IrTransmitConfig()
         private set
@@ -56,6 +57,7 @@ class FakeIrTransmitter(
         if (!isAvailable || shouldFail) {
             Result.failure(IllegalStateException("Fake IR hardware failure"))
         } else {
+            transmittedSignals.add(signal)
             Result.success(Unit)
         }
 

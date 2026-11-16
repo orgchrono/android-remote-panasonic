@@ -52,7 +52,7 @@ This enables the operator to switch transmission channels instantaneously or tri
 | :--- | :--- | :--- | :--- |
 | **DVD / HDD Deck (Standard DIGA)** | `0xB0` (176) | `0x00` / `0x10` / `0x20` | DMR-E50, E55, E85H, ES10, ES15, EH50, EH55, EH65, EX77, EZ48V |
 | **VCR Deck (VHS/DVD Combos)** | `0x90` (144) | `0x00` / `0x10` / `0x20` | DMR-ES30V, ES35V, EH75V, EZ47V, EZ48V, NV-VP30, NV-VP31, NV-VP33 |
-| **Panasonic Television Control** | `0x01` (1) or `0x08` (8) | `0x00` | Front `TV POWER`, `TV VOL +/-`, `TV AV` top remote buttons |
+| **Panasonic Television Control** | `0x80` (128) | `0x00` | Front `TV POWER` (`0x3D`), `TV VOL +/-` (`0x20`/`0x21`), `TV AV` (`0x05`) |
 | **Blu-ray DIGA Units (Extension)** | `0xB0` (176) | `0x00` (Extended OBCs) | DMR-BW500, DMR-BWT700, DMR-BZT710 |
 
 ---

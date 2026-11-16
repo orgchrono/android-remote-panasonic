@@ -12,6 +12,7 @@ object DigaUiStrings {
     // App Header & Tabs
     const val APP_TITLE: String = "DIGA Commander Pro"
     const val TAB_REMOTE: String = "Remote"
+    const val TAB_KEYMAP: String = "Keymap"
     const val TAB_SERVICE: String = "Service"
     const val TAB_HACKS: String = "Recovery"
     const val TAB_IR: String = "IR Link"
@@ -275,4 +276,25 @@ object DigaUiStrings {
     const val DIALOG_START_RECOVERY: String = "Start Recovery"
     const val DIALOG_EXECUTE_RESET: String = "Execute Reset"
     const val DIALOG_CANCEL: String = "Cancel"
+
+    // Dynamic Keymap & All-Panasonic Catalog UI
+    const val KEYMAP_CARD_ACTIVE_TITLE: String = "DYNAMIC AUTO-ASSEMBLED KEYMAP"
+    const val KEYMAP_BTN_CATALOG: String = "ALL PANASONIC"
+    const val KEYMAP_BTN_EDIT_ON: String = "EDIT: ON"
+    const val KEYMAP_BTN_EDIT_OFF: String = "EDIT MAP"
+    const val KEYMAP_BTN_ADD_KEY: String = "+ ADD KEY"
+    const val KEYMAP_BTN_IMPORT: String = "IMPORT"
+    const val KEYMAP_BTN_EXPORT: String = "EXPORT"
+    const val KEYMAP_BTN_RESET: String = "RESET"
+    const val KEYMAP_EDIT_HINT: String = "Tap any key below to edit label, D/S/OBC hex, color, or order live."
+    const val KEYMAP_SEARCH_PLACEHOLDER: String = "Search Panasonic model (EH55, ES46V, TX-P50, NV-HV60...)"
+    const val KEYMAP_EMPTY_SEARCH: String = "No Panasonic models matched your query."
+    const val KEYMAP_IMPORT_TITLE: String = "Import .irplus XML or Flipper .ir"
+    const val KEYMAP_EXPORT_TITLE: String = "Exported .irplus XML Profile"
+    const val KEYMAP_NEW_KEY_TITLE: String = "Add Custom Runtime Key"
+    const val KEYMAP_EDIT_KEY_TITLE: String = "Edit Key Mapping Live"
+    const val KEYMAP_TEST_IR: String = "TEST IR"
+    const val KEYMAP_SAVE: String = "SAVE"
+    const val KEYMAP_DELETE: String = "DELETE"
+    const val KEYMAP_CONFIRM_SEND_TITLE: String = "Confirm Critical IR Key"
 }

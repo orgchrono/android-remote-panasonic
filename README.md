@@ -92,16 +92,22 @@ app/src/main/java/com/vhs/digacommander/
 │   ├── model/                          # Immutable domain and presentation data classes
 │   │   ├── IrSignal.kt                 # Immutable carrier frequency + pulse microsecond array
 │   │   ├── RemoteMode.kt               # Enum (MODE_1 = 0x00, MODE_2 = 0x10, MODE_3 = 0x20)
-│   │   ├── DigaDevice.kt               # Enum (DVD_HDD = 0xB0, VCR = 0x90, TV = 0x01)
+│   │   ├── DigaDevice.kt               # Enum (DVD_HDD = 0xB0, VCR = 0x90, TV = 0x80)
+│   │   ├── DynamicKeymap.kt            # Runtime-editable keymap & all-Panasonic catalog models
 │   │   ├── MacroCommand.kt             # Immutable macro step definition
 │   │   └── MacroExecutionState.kt      # Sealed interface (Idle, Running, Completed, Error, Cancelled)
+│   ├── keymap/
+│   │   └── KeymapStore.kt              # Pure-Kotlin persisted dynamic keymap workspace store
 │   ├── ir/
 │   │   ├── KaseikyoProtocol.kt         # Pure FP pulse and Pronto Hex synthesizer (referentially transparent)
 │   │   ├── ProntoHexConverter.kt       # Pure functional parser converting Pronto strings to IrSignal
 │   │   └── ConsumerIrTransmitter.kt    # Hardware abstraction over Android ConsumerIrManager
 │   └── catalog/
-│       └── PanasonicDigaCatalog.kt     # Master catalog: hardware-verified OBC codes (0x00/0x01), Pronto strings, and bench macros
+│       ├── PanasonicCatalogRepository.kt # Offline loader for 1,763 Panasonic codesets (14,744 models)
+│       └── PanasonicDigaCatalog.kt     # Master catalog: hardware-verified OBC codes (0x00/0x01/0x05), Pronto strings, and bench macros
 ├── domain/
+│   ├── keymap/
+│   │   └── DynamicKeymapAssembler.kt   # Self-assembling keymap builder + .irplus / Flipper .ir import/export
 │   └── pipeline/
 │       └── DigaMacroPipeline.kt        # Serialized Mutex coroutine pipeline with anti-brick delays
 └── presentation/
@@ -115,8 +121,10 @@ app/src/main/java/com/vhs/digacommander/
         │   └── VfdDisplay.kt           # Parametric retro fluorescent VFD panel
         └── tabs/
             ├── RemoteTab.kt            # Tab 1: EUR7659Y60 / EUR7659Y70 mirror, mode switcher, VCR deck
-            ├── ServiceTab.kt           # Tab 2: Service bench diagnostics, laser hour meter, EEPROM slots
-            └── HacksTab.kt             # Tab 3: Automated OSD recovery, Region Free unlock, Child Lock override
+            ├── DynamicMapTab.kt        # Tab 2: All-Panasonic DB (1,763 codesets / 14,744 models) & runtime live keymap editor
+            ├── ServiceTab.kt           # Tab 3: Service bench diagnostics, laser hour meter, EEPROM slots
+            ├── HacksTab.kt             # Tab 4: Automated OSD recovery, Region Free unlock, Child Lock override
+            └── IrDiagnosticsTab.kt     # Tab 5: IR capabilities, timing calibration & camera beacon
 ```
 
 ---

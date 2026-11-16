@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -58,6 +59,7 @@ import com.vhs.digacommander.presentation.theme.DigaTextPrimary
 import com.vhs.digacommander.presentation.ui.components.KeyStyle
 import com.vhs.digacommander.presentation.ui.components.RemoteKey
 import com.vhs.digacommander.presentation.ui.components.VfdDisplay
+import com.vhs.digacommander.presentation.ui.tabs.DynamicMapTab
 import com.vhs.digacommander.presentation.ui.tabs.HacksTab
 import com.vhs.digacommander.presentation.ui.tabs.IrDiagnosticsTab
 import com.vhs.digacommander.presentation.ui.tabs.RemoteTab
@@ -73,6 +75,7 @@ private enum class DigaTab(
     val icon: ImageVector,
 ) {
     REMOTE(DigaUiStrings.TAB_REMOTE, Icons.Filled.SettingsRemote),
+    KEYMAP(DigaUiStrings.TAB_KEYMAP, Icons.Filled.Tune),
     SERVICE(DigaUiStrings.TAB_SERVICE, Icons.Filled.Build),
     RECOVERY(DigaUiStrings.TAB_HACKS, Icons.Filled.Restore),
     IR_LINK(DigaUiStrings.TAB_IR, Icons.Filled.SettingsInputAntenna),
@@ -175,6 +178,24 @@ fun DigaMainScreen(
                                 onToggleVcrDeck = viewModel::onToggleVcrDeck,
                                 onModeSelected = viewModel::onModeSelected,
                                 onSendCommand = viewModel::sendCommand,
+                            )
+                        DigaTab.KEYMAP ->
+                            DynamicMapTab(
+                                uiState = uiState,
+                                onModeSelected = viewModel::onModeSelected,
+                                onSendDynamicKey = viewModel::sendDynamicKey,
+                                onSelectProfile = viewModel::selectDynamicProfile,
+                                onDeleteProfile = viewModel::deleteDynamicProfile,
+                                onToggleEditMode = viewModel::toggleMapEditMode,
+                                onUpsertKey = viewModel::upsertDynamicKey,
+                                onDuplicateKey = viewModel::duplicateDynamicKey,
+                                onDeleteKey = viewModel::deleteDynamicKey,
+                                onMoveKey = viewModel::moveDynamicKey,
+                                onResetProfile = viewModel::resetActiveProfileFromCatalog,
+                                onCatalogSearchChanged = viewModel::onCatalogSearchChanged,
+                                onAssembleCodeset = viewModel::assembleAndSelectCodeset,
+                                onImportText = viewModel::importKeymapText,
+                                onExportIrplus = viewModel::exportActiveKeymapIrplus,
                             )
                         DigaTab.SERVICE ->
                             ServiceTab(

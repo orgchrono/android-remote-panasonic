@@ -10,8 +10,8 @@ enum class DigaDevice(val id: Int) {
     /** 0x90 (144) - VCR deck on dual-deck combo recorders (e.g. ES30V, EH75V, EZ48V, NV-VP) */
     VCR(0x90),
 
-    /** 0x01 (1) - Panasonic Viera television controls */
-    TV(0x01),
+    /** 0x80 (128) - Panasonic Viera television controls */
+    TV(0x80),
 
     /** 0xFE (254) - Unassigned address used by the camera test beacon; no equipment reacts to it. */
     DIAGNOSTIC(0xFE),

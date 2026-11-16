@@ -9,8 +9,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.vhs.digacommander.data.catalog.PanasonicCatalogRepository
 import com.vhs.digacommander.data.ir.ConsumerIrTransmitter
 import com.vhs.digacommander.data.ir.SharedPrefsIrConfigStore
+import com.vhs.digacommander.data.keymap.SharedPrefsKeymapStore
 import com.vhs.digacommander.presentation.theme.DigaDarkBackground
 import com.vhs.digacommander.presentation.theme.PanasonicDigaCommanderTheme
 import com.vhs.digacommander.presentation.ui.DigaMainScreen
@@ -31,7 +33,14 @@ class MainActivity : ComponentActivity() {
                 val hardwareDefault = ConsumerIrTransmitter.defaultConfigForDevice()
                 val configStore = SharedPrefsIrConfigStore(applicationContext, hardwareDefault)
                 val transmitter = ConsumerIrTransmitter(applicationContext, configStore.load())
-                return DigaViewModel(transmitter = transmitter, configStore = configStore) as T
+                val catalogRepository = PanasonicCatalogRepository.fromAndroidAssets(applicationContext)
+                val keymapStore = SharedPrefsKeymapStore(applicationContext)
+                return DigaViewModel(
+                    transmitter = transmitter,
+                    configStore = configStore,
+                    catalogRepository = catalogRepository,
+                    keymapStore = keymapStore,
+                ) as T
             }
         }
     }

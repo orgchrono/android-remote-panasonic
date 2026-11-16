@@ -416,11 +416,10 @@ All primary commands use Matsushita Kaseikyo 48-bit with **Device `0xB0`** and *
 | `LEFT` | `0x87` | `0x37` | Navigation ◀ | Cursor navigation Left |
 | `RIGHT` | `0x88` | `0x38` | Navigation ▶ | Cursor navigation Right |
 | `ENTER_OK` | `0x82` | `0x32` | OK / Enter | Confirm selection / execute menu item |
-| `RETURN` | `0x81` | `0x31` | Return | Return to previous menu level |
-| `EXIT` | `0xA5` | `0x15` | Exit | Clear all on-screen graphical menus (distinct from `REC_MODE` `0x51`) |
+| `RETURN` | `0x81` | `0x31` | Return | Return to previous menu level (primary menu exit on DMR-EH55) |
 | `CANCEL` | `0x83` | `0x33` | Cancel / Clear | Cancel programmed timer entry or active prompt |
-| `GUIDE` | `0x7C` | `0xCC` | Guide / Schedule | Open Schedule / Timer Grid (`Schedule` in `Panasonic_DVD_TV.ir`; EPG models also use `0x60`) |
-| `PROG_CHECK` | `0x7C` | `0xCC` | Prog / Check | Display scheduled timer recording list |
+| `GUIDE` | `0x60` | `0xD0` | Guide (EPG) | Open EPG / TV Guide (`0x60` across EH55/EH65/EH75V/EX77/BWT) |
+| `PROG_CHECK` | `0x7C` | `0xCC` | Prog / Check | Display scheduled timer recording list (`Schedule` in `Panasonic_DVD_TV.ir`) |
 | `PLAY` | `0x0A` | `0xBA` | Play ▶ | Begin playback of selected title / media |
 | `STOP` | `0x00` | `0xB0` | Stop ■ | Halt playback or active recording |
 | `PAUSE` | `0x06` | `0xB6` | Pause ❚❚ | Freeze playback or pause recording |
@@ -461,20 +460,23 @@ Wire format: `02 20 B0 01 <CMD> <B0 ^ 01 ^ CMD>` (combined with `RemoteMode` via
 
 | Constant Identifier | Command (Hex) | Checksum (Hex) | Function Description |
 |:---|:---:|:---:|:---|
+| `EXIT` | `0x51` | `0xE0` | Clear all on-screen menus on DIGA EX/BWT/Combo models (`02 20 B0 01 51 E0`; distinct from `REC_MODE` `S=0x00 F=0x51`) |
+| `COMBO_VCR_TV` | `0x7E` | `0xCF` | VCR/TV switch on combo EUR7659Y70 / ES30V / ES46V / EZ48V decks (`02 20 B0 01 7E CF`) |
 | `TELETEXT_RED` | `0x41` | `0xF0` | Teletext / Interactive Red button |
 | `TELETEXT_GREEN` | `0x42` | `0xF3` | Teletext / Interactive Green button |
 | `TELETEXT_YELLOW` | `0x43` | `0xF2` | Teletext / Interactive Yellow button |
 | `TELETEXT_BLUE` | `0x44` | `0xF5` | Teletext / Interactive Blue / Data button |
 | `JDM_ND2_SERVICE` | `0x82` | `0x33` | Japanese Domestic Market (JDM) ND2 service diagnostic key |
 
-### 6.3 Hardware Capture Audit Notes (Flipper-IRDB Cross-Check)
+### 6.3 Hardware Capture Audit Notes (Flipper-IRDB & Harmony Cross-Check)
 
 - **`EJECT` (`0x01`)**: Verified in `Panasonic_EUR7621070.ir` (`02 20 B0 00 01 B1`); `0x39` appears only on select legacy/combo decks.
-- **`STATUS` (`0x5F`)**: Verified in `Panasonic_DVD_TV.ir`; supersedes earlier unverified notes listing `0x29` or `0x21`.
-- **`SUBTITLE` (`0x91`)**: Verified in `Panasonic_EUR7621070.ir`; supersedes legacy table entries (`0x71` / `0x28`).
-- **`REWIND` (`0x04`) / `FAST_FORWARD` (`0x05`) vs. `SKIP_PREV` (`0x49`) / `SKIP_NEXT` (`0x4A`)**: Earlier drafts inverted shuttle search (`0x04`/`0x05`) with chapter skip (`0x49`/`0x4A`); verified hardware captures confirm `0x04`/`0x05` are `Rev`/`Ff` and `0x49`/`0x4A` are `Prev`/`Next`.
-- **`TOP_MENU` (`0x9B`) & `GUIDE` / `SCHEDULE` (`0x7C`)**: Match `Top_menu` (`0x9B`) and `Schedule` (`0x7C`) in `Panasonic_DVD_TV.ir`.
-- **`CANCEL` (`0x83`) & `EXIT` (`0xA5`)**: `CANCEL` verified at `0x83`; `EXIT` mapped to `0xA5` to avoid colliding with `REC_MODE` (`0x51`).
+- **`STATUS` (`0x5F`) & `INFO` (`0x66`)**: `STATUS` (`0x5F`) verified on EH55/ES10/ES15/ES30V/EH75V; `INFO` (`0x66`) verified on EH55/EH65/EX77/BWT720.
+- **`SUBTITLE` (`0x91`)**: Verified in `Panasonic_EUR7621070.ir` and `EH55-Combo.rmdu`; extended DVB-T/Blu-ray models also use `Subdevice 0x01`, `0x71`.
+- **`REWIND` (`0x04`) / `FAST_FORWARD` (`0x05`) vs. `SKIP_PREV` (`0x49`) / `SKIP_NEXT` (`0x4A`)**: DVD/HDD shuttle search is `0x04`/`0x05` and chapter skip is `0x49`/`0x4A`; standalone VCR deck (`Device 0x90`) uses `0x02`/`0x03` for Rewind/FF.
+- **`TOP_MENU` (`0x9B`), `GUIDE` (`0x60`) & `PROG_CHECK` / `SCHEDULE` (`0x7C`)**: `Top_menu` = `Direct_navigator` (`0x9B`), EPG `Guide` = `0x60`, and timer `Schedule` = `0x7C`.
+- **`CANCEL` (`0x83`) & Extended `EXIT` (`S=0x01, F=0x51`)**: `CANCEL` verified at `0x83`; `EXIT` verified at `02 20 B0 01 51 E0` (avoiding collision with `REC_MODE` `0x51` at `Subdevice 0x00`).
+- **TV (`0x80`) & VCR/Combo (`0x90` / `0xB0`)**: Panasonic TV uses Device **`0x80`** (`VOL+ = 0x20`, `VOL- = 0x21`, `POWER = 0x3D`, `AV = 0x05`); VCR `Tracking +/-` = `0xB1/0xB2`, `VHS Input (Combo)` = `0x90 S=0x05 F=0xE2`, `Dubbing VHS<->DVD` = `0xB0 S=0x00 F=0x30/0x31`.
 
 ---
 

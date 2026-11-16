@@ -2,18 +2,29 @@ package com.vhs.digacommander.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vhs.digacommander.data.catalog.PanasonicCatalogRepository
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
 import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.ir.InMemoryIrConfigStore
 import com.vhs.digacommander.data.ir.IrConfigStore
 import com.vhs.digacommander.data.ir.IrTransmitter
+import com.vhs.digacommander.data.ir.KaseikyoProtocol
+import com.vhs.digacommander.data.keymap.InMemoryKeymapStore
+import com.vhs.digacommander.data.keymap.KeymapStore
+import com.vhs.digacommander.data.keymap.KeymapWorkspaceState
 import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.DynamicKeymapProfile
+import com.vhs.digacommander.data.model.DynamicRemoteKey
 import com.vhs.digacommander.data.model.IrCapabilities
 import com.vhs.digacommander.data.model.IrTimingUnit
 import com.vhs.digacommander.data.model.IrTransmitConfig
+import com.vhs.digacommander.data.model.KeyProtocol
 import com.vhs.digacommander.data.model.MacroCommand
 import com.vhs.digacommander.data.model.MacroExecutionState
+import com.vhs.digacommander.data.model.PanasonicCatalogCodeset
+import com.vhs.digacommander.data.model.PanasonicCategory
 import com.vhs.digacommander.data.model.RemoteMode
+import com.vhs.digacommander.domain.keymap.DynamicKeymapAssembler
 import com.vhs.digacommander.domain.pipeline.DigaMacroPipeline
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import kotlinx.coroutines.CoroutineDispatcher
@@ -62,7 +73,22 @@ data class DigaUiState(
     val showResetConfirm: Boolean = false,
     val showAutoRestoreSet2Confirm: Boolean = false,
     val showAutoRestoreSet3Confirm: Boolean = false,
-)
+    // Dynamic Keymap & All-Panasonic Catalog state
+    val dynamicProfiles: List<DynamicKeymapProfile> = listOf(DynamicKeymapAssembler.assembleFallbackDigaProfile()),
+    val activeDynamicProfileId: String = "profile_fallback_diga_eh55",
+    val isMapEditMode: Boolean = false,
+    val catalogSearchQuery: String = "",
+    val catalogCategory: PanasonicCategory = PanasonicCategory.ALL,
+    val catalogResults: List<PanasonicCatalogCodeset> = emptyList(),
+    val catalogCodesetCount: Int = 0,
+    val catalogModelCount: Int = 0,
+    val catalogLoading: Boolean = false,
+) {
+    val activeDynamicProfile: DynamicKeymapProfile
+        get() =
+            dynamicProfiles.firstOrNull { it.id == activeDynamicProfileId }
+                ?: dynamicProfiles.first()
+}
 
 /**
  * MVVM ViewModel managing application state and user intents with Unidirectional Data Flow (UDF).
@@ -75,6 +101,8 @@ class DigaViewModel(
     private val macroPipeline: DigaMacroPipeline = DigaMacroPipeline(transmitter),
     private val configStore: IrConfigStore = InMemoryIrConfigStore(transmitter.config),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val catalogRepository: PanasonicCatalogRepository? = null,
+    private val keymapStore: KeymapStore = InMemoryKeymapStore(),
 ) : ViewModel() {
     private val transmitMutex = Mutex()
     private var beaconJob: Job? = null
@@ -85,6 +113,7 @@ class DigaViewModel(
     init {
         transmitter.updateConfig(configStore.load())
         _uiState.update(::withIrSnapshot)
+        bootstrapDynamicKeymaps()
 
         // Observe pipeline states reactively and reflect on virtual VFD
         viewModelScope.launch {
@@ -186,6 +215,24 @@ class DigaViewModel(
                 isTv -> DigaDevice.TV
                 else -> DigaDevice.DVD_HDD
             }
+        val effectiveCommand =
+            if (isVcr) {
+                when {
+                    command == PanasonicDigaCatalog.OBC.REWIND && label == DigaUiStrings.CMD_LABEL_REWIND ->
+                        PanasonicDigaCatalog.OBC.VCR_REWIND
+                    command == PanasonicDigaCatalog.OBC.FAST_FORWARD && label == DigaUiStrings.CMD_LABEL_FAST_FORWARD ->
+                        PanasonicDigaCatalog.OBC.VCR_FAST_FORWARD
+                    else -> command
+                }
+            } else {
+                command
+            }
+        val subdeviceGroup =
+            if (!isVcr && !isTv && command == PanasonicDigaCatalog.OBC.EXIT && label == DigaUiStrings.CMD_LABEL_EXIT) {
+                KaseikyoProtocol.SUBDEVICE_EXTENDED
+            } else {
+                KaseikyoProtocol.SUBDEVICE_PRIMARY
+            }
         val channelSuffix = if (mode != RemoteMode.MODE_1 && !isTv) " [${mode.label}]" else ""
         val deckSuffix = if (isVcr) DigaUiStrings.SUFFIX_DECK_VCR else ""
         val displayLabel = "$label$deckSuffix$channelSuffix"
@@ -198,10 +245,67 @@ class DigaViewModel(
         }
 
         viewModelScope.launch(ioDispatcher) {
-            val result = transmitMutex.withLock { transmitter.transmitKaseikyo(device, mode, command) }
+            val result =
+                transmitMutex.withLock {
+                    if (subdeviceGroup == KaseikyoProtocol.SUBDEVICE_PRIMARY) {
+                        transmitter.transmitKaseikyo(device, mode, effectiveCommand)
+                    } else {
+                        transmitter.transmitKaseikyoRaw(device.id, mode, effectiveCommand, subdeviceGroup)
+                    }
+                }
             _uiState.update { current ->
                 result.fold(
                     onSuccess = { current.copy(vfdMainText = displayLabel, vfdSubText = DigaUiStrings.VFD_PULSE_SENT) },
+                    onFailure = { error ->
+                        current.copy(
+                            vfdMainText = DigaUiStrings.VFD_ERROR,
+                            vfdSubText = error.message ?: DigaUiStrings.VFD_FAILED_TRANSMIT_PULSE,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    /**
+     * Transmits any key from the dynamic self-assembling keymap (arbitrary Kaseikyo D/S/F or Pronto RAW).
+     */
+    fun sendDynamicKey(key: DynamicRemoteKey) {
+        val mode = _uiState.value.activeMode
+        val displayLabel = key.label
+        val wirePreview = key.formatWirePreview(mode)
+
+        _uiState.update {
+            it.copy(
+                vfdMainText = displayLabel,
+                vfdSubText = "${DigaUiStrings.VFD_SENDING_PREFIX}$wirePreview",
+            )
+        }
+
+        viewModelScope.launch(ioDispatcher) {
+            val result =
+                transmitMutex.withLock {
+                    when (key.protocol) {
+                        KeyProtocol.KASEIKYO ->
+                            transmitter.transmitKaseikyoRaw(
+                                device = key.device,
+                                mode = mode,
+                                command = key.obc,
+                                subdeviceGroup = key.subdevice,
+                                respectMode = key.respectRemoteMode,
+                            )
+                        KeyProtocol.PRONTO_RAW ->
+                            transmitter.transmitPronto(key.prontoHex.orEmpty())
+                    }
+                }
+            _uiState.update { current ->
+                result.fold(
+                    onSuccess = {
+                        current.copy(
+                            vfdMainText = displayLabel,
+                            vfdSubText = "$wirePreview | ${DigaUiStrings.VFD_PULSE_SENT}",
+                        )
+                    },
                     onFailure = { error ->
                         current.copy(
                             vfdMainText = DigaUiStrings.VFD_ERROR,
@@ -310,6 +414,219 @@ class DigaViewModel(
 
     fun setAutoRestoreSet3ConfirmVisible(visible: Boolean) {
         _uiState.update { it.copy(showAutoRestoreSet3Confirm = visible) }
+    }
+
+    // --- Dynamic Keymap & All-Panasonic Catalog ---------------------------------------------
+
+    private fun bootstrapDynamicKeymaps() {
+        val saved = keymapStore.load()
+        if (saved.profiles.isNotEmpty()) {
+            val resolvedActive =
+                saved.activeProfileId.takeIf { id -> saved.profiles.any { it.id == id } }
+                    ?: saved.profiles.first().id
+            _uiState.update {
+                it.copy(
+                    dynamicProfiles = saved.profiles,
+                    activeDynamicProfileId = resolvedActive,
+                )
+            }
+        }
+        val repo = catalogRepository ?: return
+        _uiState.update { it.copy(catalogLoading = true) }
+        viewModelScope.launch(ioDispatcher) {
+            val stats = runCatching { repo.stats() }.getOrDefault(0 to 0)
+            val initialResults = runCatching { repo.search("", PanasonicCategory.ALL) }.getOrDefault(emptyList())
+            _uiState.update { current ->
+                var nextProfiles = current.dynamicProfiles
+                var nextActive = current.activeDynamicProfileId
+                if (saved.profiles.isEmpty() && initialResults.isNotEmpty()) {
+                    val primary =
+                        repo.findById("curated_diga_eh55_eur7659") ?: initialResults.first()
+                    val assembled = DynamicKeymapAssembler.assembleFromCodeset(primary)
+                    val extra =
+                        listOfNotNull(
+                            repo.findById("curated_diga_combo_vhs_dvd"),
+                            repo.findById("curated_viera_tv_128"),
+                            repo.findById("curated_panasonic_vcr_144"),
+                        ).map { DynamicKeymapAssembler.assembleFromCodeset(it) }
+                    nextProfiles = (listOf(assembled) + extra).distinctBy { it.id }
+                    nextActive = assembled.id
+                    keymapStore.save(KeymapWorkspaceState(nextActive, nextProfiles))
+                }
+                current.copy(
+                    dynamicProfiles = nextProfiles,
+                    activeDynamicProfileId = nextActive,
+                    catalogResults = initialResults,
+                    catalogCodesetCount = stats.first,
+                    catalogModelCount = stats.second,
+                    catalogLoading = false,
+                )
+            }
+        }
+    }
+
+    fun onCatalogSearchChanged(
+        query: String,
+        category: PanasonicCategory = _uiState.value.catalogCategory,
+    ) {
+        _uiState.update {
+            it.copy(
+                catalogSearchQuery = query,
+                catalogCategory = category,
+            )
+        }
+        val repo = catalogRepository ?: return
+        viewModelScope.launch(ioDispatcher) {
+            val results = runCatching { repo.search(query, category) }.getOrDefault(emptyList())
+            _uiState.update { it.copy(catalogResults = results) }
+        }
+    }
+
+    fun assembleAndSelectCodeset(
+        codeset: PanasonicCatalogCodeset,
+        preferredModelName: String? = null,
+    ) {
+        val assembled = DynamicKeymapAssembler.assembleFromCodeset(codeset, preferredModelName)
+        upsertDynamicProfile(assembled, selectAfter = true)
+    }
+
+    fun selectDynamicProfile(profileId: String) {
+        val existing = _uiState.value.dynamicProfiles.firstOrNull { it.id == profileId } ?: return
+        _uiState.update {
+            it.copy(
+                activeDynamicProfileId = existing.id,
+                vfdMainText = existing.name.take(24).uppercase(),
+                vfdSubText = "KEYMAP LOADED (${existing.keys.size} KEYS)",
+            )
+        }
+        keymapStore.save(KeymapWorkspaceState(existing.id, _uiState.value.dynamicProfiles))
+    }
+
+    fun toggleMapEditMode() {
+        _uiState.update { it.copy(isMapEditMode = !it.isMapEditMode) }
+    }
+
+    fun renameActiveProfile(newName: String) {
+        val cleaned = newName.trim()
+        if (cleaned.isEmpty()) return
+        val active = _uiState.value.activeDynamicProfile
+        upsertDynamicProfile(active.copy(name = cleaned, isUserModified = true), selectAfter = true)
+    }
+
+    fun deleteDynamicProfile(profileId: String) {
+        val currentList = _uiState.value.dynamicProfiles
+        if (currentList.size <= 1) return
+        val updated = currentList.filterNot { it.id == profileId }
+        val nextActive =
+            if (_uiState.value.activeDynamicProfileId == profileId) {
+                updated.first().id
+            } else {
+                _uiState.value.activeDynamicProfileId
+            }
+        _uiState.update {
+            it.copy(
+                dynamicProfiles = updated,
+                activeDynamicProfileId = nextActive,
+            )
+        }
+        keymapStore.save(KeymapWorkspaceState(nextActive, updated))
+    }
+
+    fun upsertDynamicKey(key: DynamicRemoteKey) {
+        val active = _uiState.value.activeDynamicProfile
+        val existingIdx = active.keys.indexOfFirst { it.id == key.id }
+        val updatedKeys =
+            if (existingIdx >= 0) {
+                active.keys.toMutableList().apply { set(existingIdx, key) }
+            } else {
+                active.keys + key
+            }
+        upsertDynamicProfile(active.copy(keys = updatedKeys, isUserModified = true), selectAfter = true)
+    }
+
+    fun duplicateDynamicKey(key: DynamicRemoteKey) {
+        val clone = key.copy(id = "${key.id}_copy_${System.currentTimeMillis()}", label = "${key.label} (Copy)")
+        upsertDynamicKey(clone)
+    }
+
+    fun deleteDynamicKey(keyId: String) {
+        val active = _uiState.value.activeDynamicProfile
+        val updatedKeys = active.keys.filterNot { it.id == keyId }
+        upsertDynamicProfile(active.copy(keys = updatedKeys, isUserModified = true), selectAfter = true)
+    }
+
+    fun moveDynamicKey(
+        keyId: String,
+        delta: Int,
+    ) {
+        val active = _uiState.value.activeDynamicProfile
+        val idx = active.keys.indexOfFirst { it.id == keyId }
+        if (idx < 0) return
+        val target = (idx + delta).coerceIn(0, active.keys.lastIndex)
+        if (target == idx) return
+        val mutable = active.keys.toMutableList()
+        val item = mutable.removeAt(idx)
+        mutable.add(target, item)
+        upsertDynamicProfile(active.copy(keys = mutable, isUserModified = true), selectAfter = true)
+    }
+
+    fun resetActiveProfileFromCatalog() {
+        val active = _uiState.value.activeDynamicProfile
+        val repo = catalogRepository
+        val source = repo?.findById(active.sourceCodesetId)
+        val rebuilt =
+            if (source != null) {
+                DynamicKeymapAssembler.assembleFromCodeset(source)
+            } else {
+                DynamicKeymapAssembler.assembleFallbackDigaProfile().copy(id = active.id, name = active.name)
+            }
+        upsertDynamicProfile(rebuilt, selectAfter = true)
+    }
+
+    fun importKeymapText(
+        rawText: String,
+        profileName: String,
+    ): Boolean {
+        val trimmed = rawText.trim()
+        if (trimmed.isEmpty()) return false
+        val imported =
+            if (trimmed.contains("<irplus", ignoreCase = true) || trimmed.contains("<button", ignoreCase = true)) {
+                DynamicKeymapAssembler.importFromIrplusXml(trimmed, profileName)
+            } else {
+                DynamicKeymapAssembler.importFromFlipperIr(
+                    trimmed,
+                    profileName.ifBlank { "Imported Flipper Remote" },
+                )
+            }
+        if (imported.keys.isEmpty()) return false
+        upsertDynamicProfile(imported, selectAfter = true)
+        return true
+    }
+
+    fun exportActiveKeymapIrplus(): String =
+        DynamicKeymapAssembler.exportToIrplusXml(_uiState.value.activeDynamicProfile, _uiState.value.activeMode)
+
+    private fun upsertDynamicProfile(
+        profile: DynamicKeymapProfile,
+        selectAfter: Boolean,
+    ) {
+        _uiState.update { current ->
+            val idx = current.dynamicProfiles.indexOfFirst { it.id == profile.id }
+            val nextList =
+                if (idx >= 0) {
+                    current.dynamicProfiles.toMutableList().apply { set(idx, profile) }
+                } else {
+                    listOf(profile) + current.dynamicProfiles
+                }
+            val nextActive = if (selectAfter) profile.id else current.activeDynamicProfileId
+            keymapStore.save(KeymapWorkspaceState(nextActive, nextList))
+            current.copy(
+                dynamicProfiles = nextList,
+                activeDynamicProfileId = nextActive,
+                vfdMainText = profile.name.take(24).uppercase(),
+                vfdSubText = "MAP READY (${profile.keys.size} KEYS)",
+            )
+        }
     }
 
     override fun onCleared() {

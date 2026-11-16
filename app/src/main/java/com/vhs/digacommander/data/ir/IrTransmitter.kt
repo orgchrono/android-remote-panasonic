@@ -1,5 +1,6 @@
 package com.vhs.digacommander.data.ir
 
+import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.model.DigaDevice
 import com.vhs.digacommander.data.model.IrCapabilities
 import com.vhs.digacommander.data.model.IrSignal
@@ -62,4 +63,20 @@ interface IrTransmitter {
         mode: RemoteMode = RemoteMode.MODE_1,
         command: Int,
     ): Result<Unit>
+
+    /**
+     * Synthesizes and transmits an arbitrary 48-bit Kaseikyo frame with explicit device and
+     * subdevice bytes (e.g. extended Subdevice 0x01 `EXIT`, Combo 0x05 `INPUT_VHS`, or 0xA0 Audio).
+     */
+    fun transmitKaseikyoRaw(
+        device: Int = DigaDevice.DVD_HDD.id,
+        mode: RemoteMode = RemoteMode.MODE_1,
+        command: Int,
+        subdeviceGroup: Int = KaseikyoProtocol.SUBDEVICE_PRIMARY,
+        respectMode: Boolean = true,
+    ): Result<Unit> {
+        val effectiveSubdevice = if (respectMode) mode.subdevice or (subdeviceGroup and 0x0F) else subdeviceGroup and 0xFF
+        val pattern = KaseikyoProtocol.synthesizePulsePatternRaw(device, effectiveSubdevice, command)
+        return transmit(IrSignal(DigaTimings.CARRIER_MATSUSHITA_HZ, pattern))
+    }
 }

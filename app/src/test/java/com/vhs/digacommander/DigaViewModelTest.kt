@@ -3,10 +3,16 @@ package com.vhs.digacommander
 import com.vhs.digacommander.data.catalog.PanasonicDigaCatalog
 import com.vhs.digacommander.data.constant.DigaTimings
 import com.vhs.digacommander.data.ir.InMemoryIrConfigStore
+import com.vhs.digacommander.data.keymap.InMemoryKeymapStore
 import com.vhs.digacommander.data.model.DigaDevice
+import com.vhs.digacommander.data.model.DynamicRemoteKey
 import com.vhs.digacommander.data.model.IrTimingUnit
 import com.vhs.digacommander.data.model.IrTransmitConfig
+import com.vhs.digacommander.data.model.KeyProtocol
+import com.vhs.digacommander.data.model.KeySection
+import com.vhs.digacommander.data.model.KeyTone
 import com.vhs.digacommander.data.model.RemoteMode
+import com.vhs.digacommander.domain.keymap.DynamicKeymapAssembler
 import com.vhs.digacommander.domain.pipeline.DigaMacroPipeline
 import com.vhs.digacommander.presentation.constant.DigaUiStrings
 import com.vhs.digacommander.presentation.viewmodel.DigaViewModel
@@ -241,4 +247,98 @@ class DigaViewModelTest {
             assertTrue(fakeTransmitter.transmittedKaseikyo.all { it.first == DigaDevice.DIAGNOSTIC })
             assertFalse(viewModel.uiState.value.beaconRunning)
         }
+
+    @Test
+    fun testVcrRewindFastForwardExtendedExitAndTv0x80Dispatch() =
+        runTest(testDispatcher) {
+            assertEquals(0x80, DigaDevice.TV.id)
+
+            val fakeTransmitter = FakeIrTransmitter(isAvailable = true)
+            val pipeline = DigaMacroPipeline(fakeTransmitter, scope = this)
+            val viewModel = DigaViewModel(fakeTransmitter, pipeline, ioDispatcher = testDispatcher)
+
+            viewModel.onToggleVcrDeck()
+            viewModel.sendCommand(DigaUiStrings.CMD_LABEL_REWIND, PanasonicDigaCatalog.OBC.REWIND)
+            viewModel.sendCommand(DigaUiStrings.CMD_LABEL_FAST_FORWARD, PanasonicDigaCatalog.OBC.FAST_FORWARD)
+            viewModel.onToggleVcrDeck()
+            viewModel.sendCommand(DigaUiStrings.CMD_LABEL_EXIT, PanasonicDigaCatalog.OBC.EXIT)
+            advanceUntilIdle()
+
+            assertEquals(2, fakeTransmitter.transmittedKaseikyo.size)
+            assertEquals(
+                DigaDevice.VCR to 0x02,
+                fakeTransmitter.transmittedKaseikyo[0].first to fakeTransmitter.transmittedKaseikyo[0].third,
+            )
+            assertEquals(
+                DigaDevice.VCR to 0x03,
+                fakeTransmitter.transmittedKaseikyo[1].first to fakeTransmitter.transmittedKaseikyo[1].third,
+            )
+
+            assertEquals(1, fakeTransmitter.transmittedSignals.size)
+            val exitPattern = fakeTransmitter.transmittedSignals[0].patternMicroseconds
+            val expectedExit = KaseikyoPulseDecoder.decode(exitPattern)
+            assertEquals(listOf(0x02, 0x20, 0xB0, 0x01, 0x51, 0xE0), expectedExit)
+        }
+
+    @Test
+    fun testDynamicKeymapRuntimeEditsAndTransmission() =
+        runTest(testDispatcher) {
+            val fakeTransmitter = FakeIrTransmitter(isAvailable = true)
+            val pipeline = DigaMacroPipeline(fakeTransmitter, scope = this)
+            val keymapStore = InMemoryKeymapStore()
+            val viewModel =
+                DigaViewModel(
+                    transmitter = fakeTransmitter,
+                    macroPipeline = pipeline,
+                    ioDispatcher = testDispatcher,
+                    keymapStore = keymapStore,
+                )
+
+            val customKey =
+                DynamicRemoteKey(
+                    id = "custom_vhs_in",
+                    label = "INPUT VHS",
+                    section = KeySection.POWER_INPUT,
+                    protocol = KeyProtocol.KASEIKYO,
+                    device = 0x90,
+                    subdevice = 0x05,
+                    obc = 0xE2,
+                    respectRemoteMode = true,
+                    tone = KeyTone.WARNING,
+                )
+            viewModel.toggleMapEditMode()
+            assertTrue(viewModel.uiState.value.isMapEditMode)
+            viewModel.upsertDynamicKey(customKey)
+            viewModel.sendDynamicKey(customKey)
+            advanceUntilIdle()
+
+            assertEquals(1, fakeTransmitter.transmittedSignals.size)
+            assertEquals(
+                listOf(0x02, 0x20, 0x90, 0x05, 0xE2, 0x77),
+                KaseikyoPulseDecoder.decode(fakeTransmitter.transmittedSignals[0].patternMicroseconds),
+            )
+
+            // Verify persisted across fresh ViewModel instance
+            val reloadedVm =
+                DigaViewModel(
+                    transmitter = FakeIrTransmitter(),
+                    macroPipeline = DigaMacroPipeline(FakeIrTransmitter(), scope = this),
+                    ioDispatcher = testDispatcher,
+                    keymapStore = keymapStore,
+                )
+            assertTrue(reloadedVm.uiState.value.activeDynamicProfile.keys.any { it.id == "custom_vhs_in" })
+            assertTrue(DynamicKeymapAssembler.exportToIrplusXml(reloadedVm.uiState.value.activeDynamicProfile).contains("INPUT VHS"))
+        }
+
+    private object KaseikyoPulseDecoder {
+        fun decode(pattern: IntArray): List<Int> =
+            List(6) { byteIdx ->
+                var v = 0
+                for (bit in 0 until 8) {
+                    val space = pattern[2 + (byteIdx * 8 + bit) * 2 + 1]
+                    if (space > 900) v = v or (1 shl bit)
+                }
+                v
+            }
+    }
 }

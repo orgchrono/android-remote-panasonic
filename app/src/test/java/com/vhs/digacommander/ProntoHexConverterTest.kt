@@ -229,8 +229,12 @@ class ProntoHexConverterTest {
                 "ENTER_OK" to (PanasonicDigaCatalog.ENTER_OK to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x82, 0x32)),
                 "RETURN" to (PanasonicDigaCatalog.RETURN to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x81, 0x31)),
                 "CANCEL" to (PanasonicDigaCatalog.CANCEL to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x83, 0x33)),
-                "GUIDE" to (PanasonicDigaCatalog.GUIDE to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x7C, 0xCC)),
+                "GUIDE" to (PanasonicDigaCatalog.GUIDE to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x60, 0xD0)),
                 "PROG_CHECK" to (PanasonicDigaCatalog.PROG_CHECK to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x7C, 0xCC)),
+                "INFO" to (PanasonicDigaCatalog.INFO to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x66, 0xD6)),
+                "DUBBING" to (PanasonicDigaCatalog.DUBBING to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x5E, 0xEE)),
+                "VCR_DUB_VHS_TO_DVD" to (PanasonicDigaCatalog.VCR_DUB_VHS_TO_DVD to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x30, 0x80)),
+                "VCR_DUB_DVD_TO_VHS" to (PanasonicDigaCatalog.VCR_DUB_DVD_TO_VHS to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x31, 0x81)),
                 "INPUT_SELECT" to (PanasonicDigaCatalog.INPUT_SELECT to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x50, 0xE0)),
                 "PLAY" to (PanasonicDigaCatalog.PLAY to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x0A, 0xBA)),
                 "STOP" to (PanasonicDigaCatalog.STOP to intArrayOf(0x02, 0x20, 0xB0, 0x00, 0x00, 0xB0)),
@@ -285,6 +289,8 @@ class ProntoHexConverterTest {
     fun testExtendedSubdevice01AndMultiModeWireBytes() {
         val extendedCases =
             listOf(
+                "EXIT" to (PanasonicDigaCatalog.EXIT to intArrayOf(0x02, 0x20, 0xB0, 0x01, 0x51, 0xE0)),
+                "COMBO_VCR_TV" to (PanasonicDigaCatalog.COMBO_VCR_TV to intArrayOf(0x02, 0x20, 0xB0, 0x01, 0x7E, 0xCF)),
                 "TELETEXT_RED" to (PanasonicDigaCatalog.TELETEXT_RED to intArrayOf(0x02, 0x20, 0xB0, 0x01, 0x41, 0xF0)),
                 "TELETEXT_GREEN" to (PanasonicDigaCatalog.TELETEXT_GREEN to intArrayOf(0x02, 0x20, 0xB0, 0x01, 0x42, 0xF3)),
                 "TELETEXT_YELLOW" to (PanasonicDigaCatalog.TELETEXT_YELLOW to intArrayOf(0x02, 0x20, 0xB0, 0x01, 0x43, 0xF2)),
@@ -314,6 +320,29 @@ class ProntoHexConverterTest {
             intArrayOf(0x02, 0x20, 0xB0, 0x20, 0x82, 0x12),
             decodeProntoWireBytes(PanasonicDigaCatalog.getProntoHex(PanasonicDigaCatalog.OBC.ENTER_OK, RemoteMode.MODE_3)),
         )
+    }
+
+    @Test
+    fun testTvAndVcrComboDevicesWireBytesBitByBit() {
+        val multiDeviceCases =
+            listOf(
+                "TV_POWER" to (PanasonicDigaCatalog.TV_POWER to intArrayOf(0x02, 0x20, 0x80, 0x00, 0x3D, 0xBD)),
+                "TV_INPUT_AV" to (PanasonicDigaCatalog.TV_INPUT_AV to intArrayOf(0x02, 0x20, 0x80, 0x00, 0x05, 0x85)),
+                "VOL_UP" to (PanasonicDigaCatalog.VOL_UP to intArrayOf(0x02, 0x20, 0x80, 0x00, 0x20, 0xA0)),
+                "VOL_DOWN" to (PanasonicDigaCatalog.VOL_DOWN to intArrayOf(0x02, 0x20, 0x80, 0x00, 0x21, 0xA1)),
+                "VCR_REWIND" to (PanasonicDigaCatalog.VCR_REWIND to intArrayOf(0x02, 0x20, 0x90, 0x00, 0x02, 0x92)),
+                "VCR_FAST_FORWARD" to (PanasonicDigaCatalog.VCR_FAST_FORWARD to intArrayOf(0x02, 0x20, 0x90, 0x00, 0x03, 0x93)),
+                "VCR_TRACKING_PLUS" to (PanasonicDigaCatalog.VCR_TRACKING_PLUS to intArrayOf(0x02, 0x20, 0x90, 0x00, 0xB1, 0x21)),
+                "VCR_TRACKING_MINUS" to (PanasonicDigaCatalog.VCR_TRACKING_MINUS to intArrayOf(0x02, 0x20, 0x90, 0x00, 0xB2, 0x22)),
+                "VCR_INPUT_VHS" to (PanasonicDigaCatalog.VCR_INPUT_VHS to intArrayOf(0x02, 0x20, 0x90, 0x05, 0xE2, 0x77)),
+            )
+
+        for ((name, pair) in multiDeviceCases) {
+            val (prontoHex, expected) = pair
+            assertArrayEquals("$name: Pronto Hex bytes mismatch", expected, decodeProntoWireBytes(prontoHex))
+            val rawPattern = KaseikyoProtocol.synthesizePulsePatternRaw(expected[2], expected[3], expected[4])
+            assertArrayEquals("$name: Raw pulse bytes mismatch", expected, decodePulsePatternWireBytes(rawPattern))
+        }
     }
 
     @Test
